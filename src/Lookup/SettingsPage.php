@@ -53,8 +53,8 @@ final class SettingsPage
         $searchColumns  = $settings->searchColumns();
         $displayColumns = $settings->displayColumns();
         $rowCount       = TownSchema::count();
-        $dumpExists     = is_readable(TownSchema::dumpPath());
         $lookupPageUrl  = $this->lookupPageUrl();
+        $maxUpload      = size_format(wp_max_upload_size());
 
         ?>
         <div class="wrap">
@@ -89,18 +89,28 @@ final class SettingsPage
                 <code>[<?php echo esc_html(LookupController::SHORTCODE); ?>]</code>
             </p>
 
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
                 <?php wp_nonce_field(self::IMPORT_ACTION); ?>
                 <input type="hidden" name="lifelines_action" value="<?php echo esc_attr(self::IMPORT_ACTION); ?>">
                 <p>
-                    <button type="submit" class="button" <?php disabled(!$dumpExists); ?>>
-                        <?php esc_html_e('Re-import data from uk.sql', 'lifelines'); ?>
+                    <label for="lifelines-sql-file">
+                        <strong><?php esc_html_e('Import data from a .sql file', 'lifelines'); ?></strong>
+                    </label>
+                </p>
+                <p>
+                    <input type="file" id="lifelines-sql-file" name="sql_file" accept=".sql" required>
+                    <button type="submit" class="button button-primary">
+                        <?php esc_html_e('Upload &amp; import', 'lifelines'); ?>
                     </button>
-                    <?php if (!$dumpExists) : ?>
-                        <span class="description">
-                            <?php esc_html_e('data/uk.sql is missing from the plugin folder.', 'lifelines'); ?>
-                        </span>
-                    <?php endif; ?>
+                </p>
+                <p class="description">
+                    <?php
+                    printf(
+                        /* translators: %s: maximum upload size, e.g. 64 MB */
+                        esc_html__('Uploads a mysqldump of the uk_towns table, replaces the lookup data, then deletes the uploaded file. Maximum upload size: %s.', 'lifelines'),
+                        esc_html($maxUpload)
+                    );
+                    ?>
                 </p>
             </form>
 
@@ -199,10 +209,79 @@ final class SettingsPage
         if ($action === self::IMPORT_ACTION) {
             check_admin_referer(self::IMPORT_ACTION);
 
-            $result = TownSchema::import();
+            $result = $this->handleUploadAndImport();
 
             $this->notice = $result['message'];
             $this->noticeType = $result['ok'] ? 'success' : 'error';
+        }
+    }
+
+    /**
+     * Validate the uploaded .sql file, import it, and delete it.
+     *
+     * @return array{ok:bool,message:string}
+     */
+    private function handleUploadAndImport(): array
+    {
+        if (empty($_FILES['sql_file']) || !is_array($_FILES['sql_file'])) {
+            return ['ok' => false, 'message' => __('No file was uploaded.', 'lifelines')];
+        }
+
+        $file = $_FILES['sql_file'];
+        $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+
+        if ($error !== UPLOAD_ERR_OK) {
+            return ['ok' => false, 'message' => $this->uploadErrorMessage($error)];
+        }
+
+        $tmpName = (string) ($file['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            return ['ok' => false, 'message' => __('Upload failed: the file could not be read.', 'lifelines')];
+        }
+
+        $originalName = sanitize_file_name((string) ($file['name'] ?? ''));
+        if (strtolower((string) pathinfo($originalName, PATHINFO_EXTENSION)) !== 'sql') {
+            return ['ok' => false, 'message' => __('Please upload a file with a .sql extension.', 'lifelines')];
+        }
+
+        // Move to a private, randomly named path inside the uploads directory so
+        // we control the file and can delete it after importing.
+        $upload = wp_upload_dir();
+        if (!empty($upload['error']) || empty($upload['basedir'])) {
+            return ['ok' => false, 'message' => __('The uploads directory is not writable.', 'lifelines')];
+        }
+
+        $destination = trailingslashit($upload['basedir'])
+            . 'lifelines-import-' . wp_generate_password(12, false) . '.sql';
+
+        if (!move_uploaded_file($tmpName, $destination)) {
+            return ['ok' => false, 'message' => __('Could not store the uploaded file for import.', 'lifelines')];
+        }
+
+        try {
+            $result = TownSchema::import($destination);
+        } finally {
+            // Always remove the uploaded file, whether or not the import succeeded.
+            if (file_exists($destination)) {
+                @unlink($destination); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+            }
+        }
+
+        return ['ok' => $result['ok'], 'message' => $result['message']];
+    }
+
+    private function uploadErrorMessage(int $error): string
+    {
+        switch ($error) {
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                return __('The uploaded file is larger than the server allows. Increase upload_max_filesize / post_max_size, or split the dump.', 'lifelines');
+            case UPLOAD_ERR_PARTIAL:
+                return __('The file was only partially uploaded. Please try again.', 'lifelines');
+            case UPLOAD_ERR_NO_FILE:
+                return __('Please choose a .sql file to upload.', 'lifelines');
+            default:
+                return __('The file upload failed. Please try again.', 'lifelines');
         }
     }
 

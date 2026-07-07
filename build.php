@@ -49,6 +49,9 @@ class PluginBuilder
         // Tests
             'tests',
 
+        // Local SQL dumps (imported via the admin upload, not shipped)
+            'data',
+
         // Setup/config files not needed in production
             'setup',
             'node_modules',

@@ -41,15 +41,18 @@ and registers entirely on core WordPress hooks.
    into `wp-content/plugins/lifelines`.
 2. In WordPress, go to **Plugins → Add New → Upload Plugin**, or activate it from
    the Plugins screen if cloned.
-3. On activation LifeLines creates its table, imports `data/uk.sql`, and adds a
-   public **Lookup** page.
+3. On activation LifeLines creates its (empty) table and adds a public **Lookup**
+   page.
+4. Load your data: on **LifeLines → Smart Lookup**, upload a `.sql` dump of the
+   `uk_towns` table (see [Smart Lookup](#smart-lookup)).
 
 ## Smart Lookup
 
-LifeLines ships a self-contained, real-time lookup over the bundled UK dataset
-(`data/uk.sql` → the `wp_lifelines_uk_towns` table, ~43k rows of place / service /
-helpline data). It is fully **self-contained** — no plugin dependencies; it
-registers on core WordPress hooks.
+LifeLines provides a self-contained, real-time lookup over a UK dataset (place /
+service / helpline data) that you import into its `wp_lifelines_uk_towns` table.
+No data is bundled with the plugin — you upload a `.sql` dump of the `uk_towns`
+table from the admin screen. It is fully **self-contained** — no plugin
+dependencies; it registers on core WordPress hooks.
 
 **Public page.** On activation the plugin creates a published **Lookup** page
 containing the `[lifelines_lookup]` shortcode (you can also drop that shortcode on
@@ -61,7 +64,8 @@ live, matching **partial values** across the configured columns.
 - **Searchable columns** — which columns the typed text is partial-matched against.
 - **Displayed columns** — which columns (and in what order) appear in the results.
 - **Maximum results** and **minimum characters** before a search fires.
-- **Re-import data** — rebuild the table from `data/uk.sql`, with a live row count.
+- **Import data** — upload a `.sql` dump; it is imported and then the uploaded
+  file is deleted. A live row count is shown.
 
 **Security.** Column identifiers are never taken from user input: admin-chosen
 columns are validated against a fixed whitelist (`Lookup\Columns`) before being
@@ -83,7 +87,8 @@ Key classes live under `src/Lookup/`: `LookupBootstrap` (wiring + activation),
 - **`LifeLines\Lookup\LookupBootstrap`** — wires the subsystem together and runs
   activation (install table, import data, create the public page).
 - **`LifeLines\Lookup\TownSchema`** — owns the `wp_lifelines_uk_towns` table:
-  creation and importing `data/uk.sql`.
+  creation and importing an uploaded `.sql` dump (only `uk_towns` INSERTs are
+  executed).
 - **`LifeLines\Lookup\TownRepository`** — the partial-match search query.
 - **`LifeLines\Lookup\LookupController`** — the `[lifelines_lookup]` shortcode,
   front-end assets, and the public AJAX search endpoint.

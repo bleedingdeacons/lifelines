@@ -88,27 +88,19 @@ final class TownSchema
     }
 
     /**
-     * Default path to the bundled dump.
-     */
-    public static function dumpPath(): string
-    {
-        return LIFELINES_PLUGIN_DIR . 'data/uk.sql';
-    }
-
-    /**
-     * Import the mysqldump into the prefixed table, replacing any existing rows.
+     * Import a uk_towns mysqldump into the prefixed table, replacing any existing
+     * rows.
      *
-     * The dump's INSERT statements are trusted plugin-shipped content (not user
-     * input); only the hard-coded source table name is rewritten to the prefixed
-     * table before each statement is executed.
+     * Only lines that are `INSERT INTO `uk_towns` VALUES ...` statements are
+     * executed (with the source table name rewritten to the prefixed table);
+     * every other statement in the file is ignored, so an uploaded dump cannot
+     * run arbitrary SQL such as DROP/DELETE against other tables.
      *
      * @return array{ok:bool,inserted:int,errors:int,message:string}
      */
-    public static function import(?string $file = null): array
+    public static function import(string $file): array
     {
         global $wpdb;
-
-        $file = $file ?? self::dumpPath();
 
         if (!is_readable($file)) {
             return ['ok' => false, 'inserted' => 0, 'errors' => 0, 'message' => 'Data file not found: ' . $file];

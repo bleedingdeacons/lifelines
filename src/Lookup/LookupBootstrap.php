@@ -30,17 +30,13 @@ final class LookupBootstrap
     }
 
     /**
-     * Activation: create the table, import the bundled data if the table is
-     * empty, and ensure a public lookup page exists.
+     * Activation: create the (empty) table and ensure a public lookup page
+     * exists. Data is loaded afterwards by uploading a .sql file on the
+     * LifeLines → Smart Lookup admin screen.
      */
     public static function activate(): void
     {
         TownSchema::install();
-
-        if (TownSchema::count() === 0 && is_readable(TownSchema::dumpPath())) {
-            TownSchema::import();
-        }
-
         self::ensureLookupPage();
     }
 
