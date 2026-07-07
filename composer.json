@@ -1,6 +1,6 @@
 {
     "name": "bleeding-deacons/lifelines",
-    "description": "An intergroup management plugin built on Unity",
+    "description": "A standalone real-time lookup tool for UK place, service and helpline data",
     "type": "wordpress-plugin",
     "license": "MIT (Modified)",
     "authors": [

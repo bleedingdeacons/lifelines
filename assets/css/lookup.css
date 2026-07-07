@@ -1,0 +1,72 @@
+.lifelines-lookup {
+    max-width: 720px;
+    margin: 0 auto;
+    font-size: 16px;
+}
+
+.lifelines-lookup__field {
+    position: relative;
+}
+
+.lifelines-lookup__input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75em 1em;
+    font-size: 1.1em;
+    line-height: 1.4;
+    border: 2px solid #c3c4c7;
+    border-radius: 8px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.lifelines-lookup__input:focus {
+    outline: none;
+    border-color: #2271b1;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.2);
+}
+
+.lifelines-lookup__status {
+    min-height: 1.4em;
+    margin: 0.6em 0.2em;
+    color: #50575e;
+    font-size: 0.9em;
+}
+
+.lifelines-lookup__results {
+    overflow-x: auto;
+}
+
+.lifelines-lookup__table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.4em;
+}
+
+.lifelines-lookup__table th,
+.lifelines-lookup__table td {
+    text-align: left;
+    padding: 0.55em 0.75em;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: top;
+}
+
+.lifelines-lookup__table th {
+    font-weight: 600;
+    border-bottom: 2px solid #c3c4c7;
+    white-space: nowrap;
+}
+
+.lifelines-lookup__table tbody tr:hover {
+    background: #f6f7f7;
+}
+
+@media (max-width: 600px) {
+    .lifelines-lookup {
+        font-size: 15px;
+    }
+
+    .lifelines-lookup__table th,
+    .lifelines-lookup__table td {
+        padding: 0.45em 0.5em;
+    }
+}

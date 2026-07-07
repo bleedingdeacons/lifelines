@@ -49,6 +49,9 @@ class PluginBuilder
         // Tests
             'tests',
 
+        // Local SQL dumps (imported via the admin upload, not shipped)
+            'data',
+
         // Setup/config files not needed in production
             'setup',
             'node_modules',
@@ -739,8 +742,7 @@ PSR-4 Autoloading:
   Source: src/
 
 Note:
-  LifeLines is a companion plugin to Unity. Make sure Unity is installed
-  and activated before activating LifeLines.
+  LifeLines is a standalone plugin with no plugin dependencies.
 
 NOTES;
     }

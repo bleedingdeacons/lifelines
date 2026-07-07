@@ -51,6 +51,10 @@ wp-config.php
 build/
 *.zip
 
+# Local SQL dumps — imported via the admin upload, never committed or shipped
+/data/
+*.sql
+
 # Composer
 /vendor/
 composer.lock
