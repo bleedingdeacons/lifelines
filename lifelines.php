@@ -79,6 +79,20 @@ function lifelines(): \Psr\Container\ContainerInterface {
     return \LifeLines\Plugin::getContainer();
 }
 
+// -----------------------------------------------------------------------------
+// Smart Lookup subsystem
+//
+// Self-contained public lookup tool (custom table + shortcode + admin settings).
+// Registered on core WordPress hooks so it works independently of Unity.
+// -----------------------------------------------------------------------------
+add_action('plugins_loaded', function () {
+    if (class_exists(\LifeLines\Lookup\LookupBootstrap::class)) {
+        (new \LifeLines\Lookup\LookupBootstrap())->register();
+    }
+});
+
+register_activation_hook(__FILE__, [\LifeLines\Lookup\LookupBootstrap::class, 'activate']);
+
 // Initialize the plugin after Unity is loaded
 add_action('unity/loaded', function($unityContainer) {
     try {

@@ -20,6 +20,7 @@ container, and a `lifelines/loaded` action — ready for feature development.
 
 - [Requirements](#requirements)
 - [Installation](#installation)
+- [Smart Lookup](#smart-lookup)
 - [Architecture](#architecture)
 - [Kill Switch](#kill-switch)
 - [Extending LifeLines](#extending-lifelines)
@@ -42,6 +43,36 @@ container, and a `lifelines/loaded` action — ready for feature development.
    into `wp-content/plugins/lifelines`.
 3. In WordPress, go to **Plugins → Add New → Upload Plugin**, or activate it from
    the Plugins screen if cloned.
+
+## Smart Lookup
+
+LifeLines ships a self-contained, real-time lookup over the bundled UK dataset
+(`data/uk.sql` → the `wp_lifelines_uk_towns` table, ~43k rows of place / service /
+helpline data). It is **independent of Unity** — it registers on core WordPress
+hooks, so the public lookup works whether or not Unity is active.
+
+**Public page.** On activation the plugin creates a published **Lookup** page
+containing the `[lifelines_lookup]` shortcode (you can also drop that shortcode on
+any page). As you type, results are fetched from `admin-ajax.php` and rendered
+live, matching **partial values** across the configured columns.
+
+**Admin settings** (*LifeLines* menu → **Smart Lookup**):
+
+- **Searchable columns** — which columns the typed text is partial-matched against.
+- **Displayed columns** — which columns (and in what order) appear in the results.
+- **Maximum results** and **minimum characters** before a search fires.
+- **Re-import data** — rebuild the table from `data/uk.sql`, with a live row count.
+
+**Security.** Column identifiers are never taken from user input: admin-chosen
+columns are validated against a fixed whitelist (`Lookup\Columns`) before being
+back-ticked, and the search term is bound via `$wpdb->prepare()`. The public
+search endpoint is read-only and nonce-free by design, so it survives full-page
+caching.
+
+Key classes live under `src/Lookup/`: `LookupBootstrap` (wiring + activation),
+`TownSchema` (table + import), `TownRepository` (search), `LookupController`
+(shortcode + AJAX + assets), `SettingsPage` (admin), `LookupSettings` and
+`Columns` (config + whitelist).
 
 ## Architecture
 
