@@ -86,9 +86,10 @@ Key classes live under `src/Lookup/`: `LookupBootstrap` (wiring + activation),
   the lookup subsystem on the `plugins_loaded` and activation hooks.
 - **`LifeLines\Lookup\LookupBootstrap`** — wires the subsystem together and runs
   activation (install table, import data, create the public page).
-- **`LifeLines\Lookup\TownSchema`** — owns the `wp_life_lines` table:
-  creation and importing an uploaded `.sql` dump (only `life_lines` INSERTs are
-  executed).
+- **`LifeLines\Lookup\TownSchema`** — the single source of truth for the
+  `wp_life_lines` table: it creates the schema (via `dbDelta`) and imports the row
+  data from an uploaded `.sql` dump. The dump needs data only — only `life_lines`
+  INSERTs are executed, no `CREATE TABLE`.
 - **`LifeLines\Lookup\TownRepository`** — the partial-match search query.
 - **`LifeLines\Lookup\LookupController`** — the `[lifelines_lookup]` shortcode,
   front-end assets, and the public AJAX search endpoint.

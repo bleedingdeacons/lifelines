@@ -27,8 +27,9 @@ final class TownSchema
     }
 
     /**
-     * Create (or migrate) the lookup table. Uses InnoDB/utf8mb4 rather than the
-     * dump's MyISAM/latin1.
+     * Create (or migrate) the lookup table. This is the single source of truth
+     * for the schema — uploaded dumps carry data only, no CREATE TABLE. Uses
+     * InnoDB/utf8mb4.
      */
     public static function install(): void
     {
