@@ -11,9 +11,8 @@ if (!defined('ABSPATH')) {
 /**
  * Wires the smart-lookup subsystem into WordPress.
  *
- * Deliberately independent of Unity: the lookup is a self-contained public tool,
- * so it registers on core WordPress hooks and works whether or not the Unity
- * plugin is active.
+ * LifeLines is a self-contained public tool with no plugin dependencies, so it
+ * registers entirely on core WordPress hooks.
  */
 final class LookupBootstrap
 {

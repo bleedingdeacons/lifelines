@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 /**
  * Plugin Name: LifeLines
- * Description: An intergroup management plugin built on Unity. Scaffold ready for feature development.
+ * Description: A standalone real-time lookup tool for UK place, service and helpline data, with admin-configurable searchable and displayed columns.
  * Version: 1.0.0
  * Build date: 2026/07/07
  * Requires at least: 6.1
  * Requires PHP: 8.1
- * Requires Plugins: unity
  * GitHub Plugin URI: https://github.com/thebleedingdeacons/lifelines
  * GitHub Branch: main
  * Author: The Bleeding Deacons
@@ -69,21 +68,11 @@ spl_autoload_register(function ($class) {
     }
 });
 
-/**
- * Get the LifeLines dependency container (Unity's container).
- *
- * @return \Psr\Container\ContainerInterface
- * @throws \RuntimeException If LifeLines is not initialized
- */
-function lifelines(): \Psr\Container\ContainerInterface {
-    return \LifeLines\Plugin::getContainer();
-}
-
 // -----------------------------------------------------------------------------
 // Smart Lookup subsystem
 //
 // Self-contained public lookup tool (custom table + shortcode + admin settings).
-// Registered on core WordPress hooks so it works independently of Unity.
+// LifeLines has no plugin dependencies: it registers on core WordPress hooks.
 // -----------------------------------------------------------------------------
 add_action('plugins_loaded', function () {
     if (class_exists(\LifeLines\Lookup\LookupBootstrap::class)) {
@@ -92,53 +81,3 @@ add_action('plugins_loaded', function () {
 });
 
 register_activation_hook(__FILE__, [\LifeLines\Lookup\LookupBootstrap::class, 'activate']);
-
-// Initialize the plugin after Unity is loaded
-add_action('unity/loaded', function($unityContainer) {
-    try {
-        if (!class_exists('LifeLines\Plugin')) {
-            throw new \Exception('LifeLines\Plugin class not found. Check that Plugin.php exists in the src/ directory.');
-        }
-
-        \LifeLines\Plugin::init($unityContainer);
-
-        do_action('lifelines/loaded', \LifeLines\Plugin::getContainer());
-
-    } catch (\Exception $e) {
-        function_exists('wp_log')
-            ? wp_log('lifelines')->error('LifeLines Plugin Initialization Error: ' . $e->getMessage(), ['exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()])
-            : error_log('LifeLines Plugin Initialization Error: ' . $e->getMessage());
-
-        if (is_admin()) {
-            add_action('admin_notices', function() use ($e) {
-                $message = sprintf(
-                    '<strong>LifeLines Plugin Error:</strong> %s',
-                    esc_html($e->getMessage())
-                );
-                echo '<div class="notice notice-error is-dismissible"><p>' . $message . '</p></div>';
-            });
-        }
-
-        return;
-
-    } catch (\Throwable $e) {
-        function_exists('wp_log')
-            ? wp_log('lifelines')->critical('LifeLines Plugin Fatal Error: ' . $e->getMessage(), ['exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()])
-            : error_log('LifeLines Plugin Fatal Error: ' . $e->getMessage());
-
-        if (is_admin()) {
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p><strong>LifeLines Plugin Fatal Error:</strong> Plugin failed to load. Check error logs.</p></div>';
-            });
-        }
-
-        return;
-    }
-}, 10);
-
-// Show admin notice if the Unity plugin is not active
-add_action('admin_notices', function() {
-    if (!function_exists('unity') && !did_action('unity/loaded')) {
-        echo '<div class="notice notice-warning is-dismissible"><p><strong>LifeLines:</strong> This plugin requires the Unity plugin to be installed and activated.</p></div>';
-    }
-});
