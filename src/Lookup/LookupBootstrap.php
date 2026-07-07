@@ -24,8 +24,6 @@ final class LookupBootstrap
         $controller = new LookupController(new TownRepository());
         $controller->register();
 
-        (new FindButtonShortcode())->register();
-
         if (is_admin()) {
             (new SettingsPage())->register();
         }

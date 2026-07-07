@@ -65,11 +65,6 @@ is responsive — a table on wider screens, stacked cards on phones.
 navigates away, and returns to the page, their term, results, and scroll position
 are restored. A URL with `?q=` pre-fills and runs that search (shareable links).
 
-**Find button.** Place `[lifelines_find_button]` on your home page (or anywhere)
-for a call-to-action button linking to the lookup page. Attributes: `label`
-(default "Find") and `page` (a page ID, slug, or URL — defaults to the
-auto-created Lookup page).
-
 **Admin settings** (*LifeLines* menu → **Smart Lookup**):
 
 - **Searchable columns** — which columns the typed text is partial-matched against.
