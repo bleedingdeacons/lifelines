@@ -44,13 +44,13 @@ and registers entirely on core WordPress hooks.
 3. On activation LifeLines creates its (empty) table and adds a public **Lookup**
    page.
 4. Load your data: on **LifeLines → Smart Lookup**, upload a `.sql` dump of the
-   `uk_towns` table (see [Smart Lookup](#smart-lookup)).
+   `life_lines` table (see [Smart Lookup](#smart-lookup)).
 
 ## Smart Lookup
 
 LifeLines provides a self-contained, real-time lookup over a UK dataset (place /
-service / helpline data) that you import into its `wp_lifelines_uk_towns` table.
-No data is bundled with the plugin — you upload a `.sql` dump of the `uk_towns`
+service / helpline data) that you import into its `wp_life_lines` table.
+No data is bundled with the plugin — you upload a `.sql` dump of the `life_lines`
 table from the admin screen. It is fully **self-contained** — no plugin
 dependencies; it registers on core WordPress hooks.
 
@@ -86,8 +86,8 @@ Key classes live under `src/Lookup/`: `LookupBootstrap` (wiring + activation),
   the lookup subsystem on the `plugins_loaded` and activation hooks.
 - **`LifeLines\Lookup\LookupBootstrap`** — wires the subsystem together and runs
   activation (install table, import data, create the public page).
-- **`LifeLines\Lookup\TownSchema`** — owns the `wp_lifelines_uk_towns` table:
-  creation and importing an uploaded `.sql` dump (only `uk_towns` INSERTs are
+- **`LifeLines\Lookup\TownSchema`** — owns the `wp_life_lines` table:
+  creation and importing an uploaded `.sql` dump (only `life_lines` INSERTs are
   executed).
 - **`LifeLines\Lookup\TownRepository`** — the partial-match search query.
 - **`LifeLines\Lookup\LookupController`** — the `[lifelines_lookup]` shortcode,

@@ -107,7 +107,7 @@ final class SettingsPage
                     <?php
                     printf(
                         /* translators: %s: maximum upload size, e.g. 64 MB */
-                        esc_html__('Uploads a mysqldump of the uk_towns table, replaces the lookup data, then deletes the uploaded file. Maximum upload size: %s.', 'lifelines'),
+                        esc_html__('Uploads a mysqldump of the life_lines table, replaces the lookup data, then deletes the uploaded file. Maximum upload size: %s.', 'lifelines'),
                         esc_html($maxUpload)
                     );
                     ?>

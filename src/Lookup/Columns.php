@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Canonical column whitelist for the uk_towns dataset.
+ * Canonical column whitelist for the life_lines dataset.
  *
  * This is the security linchpin of the lookup feature: column identifiers are
  * never taken from user input directly. Admin-configured column names are only
@@ -22,7 +22,7 @@ final class Columns
     /**
      * Column key => human-readable label.
      *
-     * The keys and their order mirror the uk_towns table definition exactly, so
+     * The keys and their order mirror the life_lines table definition exactly, so
      * a column-less `INSERT ... VALUES` from the dump maps 1:1.
      *
      * @var array<string,string>

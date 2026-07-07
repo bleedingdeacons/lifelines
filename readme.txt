@@ -15,7 +15,7 @@ A standalone real-time lookup tool for UK place, service and helpline data, with
 **A standalone real-time lookup tool for UK place, service and helpline data.**
 
 LifeLines imports a UK dataset (place / service / helpline records) that you
-upload — a mysqldump of the `uk_towns` table — into its own database table, and
+upload — a mysqldump of the `life_lines` table — into its own database table, and
 exposes a fast, public smart lookup. As you type, matching results appear in real
 time, partial-matched across the columns you choose. No data is bundled with the
 plugin, and LifeLines is fully self-contained — it has **no plugin dependencies**.
@@ -26,7 +26,7 @@ plugin, and LifeLines is fully self-contained — it has **no plugin dependencie
 * **Auto-created public page** — on activation a published "Lookup" page containing the shortcode is created for you.
 * **Configurable columns** — an admin settings page lets you choose which columns are searched and which are shown (and in what order) in the results.
 * **Tunable behaviour** — set the maximum number of results and the minimum characters before a search fires.
-* **Upload &amp; import** — upload a `.sql` dump of the `uk_towns` table; it is imported and the uploaded file is then deleted. Only `uk_towns` INSERT statements are executed, so an uploaded file cannot run arbitrary SQL. A live row count is shown.
+* **Upload &amp; import** — upload a `.sql` dump of the `life_lines` table; it is imported and the uploaded file is then deleted. Only `life_lines` INSERT statements are executed, so an uploaded file cannot run arbitrary SQL. A live row count is shown.
 * **Safe by construction** — column identifiers are restricted to a fixed whitelist and search terms are bound via `$wpdb->prepare()`.
 * **Kill switch** — `define('LIFELINES_KILL', true)` in `wp-config.php` stands the plugin down without deactivating it.
 

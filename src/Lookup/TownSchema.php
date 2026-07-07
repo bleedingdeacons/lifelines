@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
  */
 final class TownSchema
 {
-    private const TABLE_SUFFIX = 'lifelines_uk_towns';
+    private const TABLE_SUFFIX = 'life_lines';
 
     public static function tableName(): string
     {
@@ -88,10 +88,10 @@ final class TownSchema
     }
 
     /**
-     * Import a uk_towns mysqldump into the prefixed table, replacing any existing
-     * rows.
+     * Import a life_lines mysqldump into the prefixed table, replacing any
+     * existing rows.
      *
-     * Only lines that are `INSERT INTO `uk_towns` VALUES ...` statements are
+     * Only lines that are `INSERT INTO `life_lines` VALUES ...` statements are
      * executed (with the source table name rewritten to the prefixed table);
      * every other statement in the file is ignored, so an uploaded dump cannot
      * run arbitrary SQL such as DROP/DELETE against other tables.
@@ -109,9 +109,9 @@ final class TownSchema
         self::install();
 
         $table   = self::tableName();
-        $source  = 'INSERT INTO `uk_towns` VALUES';
+        $source  = 'INSERT INTO `life_lines` VALUES';
         $target  = "INSERT INTO `{$table}` VALUES";
-        $prefix  = 'INSERT INTO `uk_towns`';
+        $prefix  = 'INSERT INTO `life_lines`';
 
         // Start from an empty table so re-imports don't collide on the PRIMARY KEY.
         $wpdb->query('TRUNCATE TABLE `' . $table . '`');
