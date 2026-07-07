@@ -53,7 +53,11 @@
             var tr = el('tr');
             columns.forEach(function (col) {
                 var value = row[col.key];
-                tr.appendChild(el('td', null, value === null || value === undefined ? '' : value));
+                var td = el('td', null, value === null || value === undefined ? '' : value);
+                // Used by the responsive card layout on narrow screens to label
+                // each value with its column heading.
+                td.setAttribute('data-label', col.label);
+                tr.appendChild(td);
             });
             tbody.appendChild(tr);
         });

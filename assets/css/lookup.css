@@ -60,13 +60,77 @@
     background: #f6f7f7;
 }
 
+/* Narrow screens (phones): turn each result row into a stacked "label: value"
+   card instead of a wide, horizontally-scrolling table. */
 @media (max-width: 600px) {
     .lifelines-lookup {
         font-size: 15px;
     }
 
-    .lifelines-lookup__table th,
+    .lifelines-lookup__results {
+        overflow-x: visible;
+    }
+
+    /* Visually hide the header row; each cell carries its own label instead. */
+    .lifelines-lookup__table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        border: 0;
+    }
+
+    .lifelines-lookup__table,
+    .lifelines-lookup__table tbody,
+    .lifelines-lookup__table tr,
     .lifelines-lookup__table td {
-        padding: 0.45em 0.5em;
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .lifelines-lookup__table tr {
+        border: 1px solid #dcdcde;
+        border-radius: 8px;
+        margin-bottom: 0.75em;
+        padding: 0.2em 0.4em;
+        background: #fff;
+    }
+
+    .lifelines-lookup__table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1em;
+        padding: 0.4em 0.4em;
+        border-bottom: 1px solid #f0f0f1;
+        text-align: right;
+    }
+
+    .lifelines-lookup__table td:last-child {
+        border-bottom: 0;
+    }
+
+    /* The column heading, shown before each value on narrow screens. */
+    .lifelines-lookup__table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #50575e;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    /* Hide empty values so cards stay compact. */
+    .lifelines-lookup__table td:empty {
+        display: none;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .lifelines-lookup__table tr {
+        background: transparent;
     }
 }
