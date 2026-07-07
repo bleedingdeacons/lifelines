@@ -23,7 +23,9 @@ plugin, and LifeLines is fully self-contained — it has **no plugin dependencie
 
 **Features:**
 
-* **Real-time smart lookup** — the `[lifelines_lookup]` shortcode renders a search box that fetches partial-match results live via AJAX as you type.
+* **Real-time smart lookup** — the `[lifelines_lookup]` shortcode renders a search box that fetches partial-match results live via AJAX as you type. The results list is responsive: a table on wider screens, stacked cards on phones.
+* **Home-page button** — the `[lifelines_find_button]` shortcode renders a call-to-action button (attributes: `label`, `page`) linking to the lookup page.
+* **Remembered search** — the search term is mirrored to the URL (`?q=`) and to sessionStorage, and the scroll position is stored, so a visitor who navigates away and returns finds their term, results and scroll position restored.
 * **Auto-created public page** — on activation a published "Lookup" page containing the shortcode is created for you.
 * **Configurable columns** — an admin settings page lets you choose which columns are searched and which are shown (and in what order) in the results.
 * **Tunable behaviour** — set the maximum number of results and the minimum characters before a search fires.

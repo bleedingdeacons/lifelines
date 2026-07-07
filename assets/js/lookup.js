@@ -8,6 +8,49 @@
 
     var cfg = LifeLinesLookup;
 
+    // Per-page key so different lookup pages remember their own state.
+    var STORE_KEY = 'lifelinesLookup:' + window.location.pathname;
+
+    // Take control of scroll restoration so we can re-apply it after the
+    // (asynchronously loaded) results have rendered and the page has its height.
+    if ('scrollRestoration' in window.history) {
+        try { window.history.scrollRestoration = 'manual'; } catch (e) { /* noop */ }
+    }
+
+    function saveState(state) {
+        try {
+            window.sessionStorage.setItem(STORE_KEY, JSON.stringify(state));
+        } catch (e) { /* storage unavailable — degrade silently */ }
+    }
+
+    function loadState() {
+        try {
+            return JSON.parse(window.sessionStorage.getItem(STORE_KEY)) || {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function urlQuery() {
+        try {
+            return new URL(window.location.href).searchParams.get('q');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function reflectQueryInUrl(term) {
+        try {
+            var u = new URL(window.location.href);
+            if (term) {
+                u.searchParams.set('q', term);
+            } else {
+                u.searchParams.delete('q');
+            }
+            window.history.replaceState(null, '', u.toString());
+        } catch (e) { /* noop */ }
+    }
+
     function debounce(fn, wait) {
         var t;
         return function () {
@@ -77,7 +120,14 @@
             status.textContent = text || '';
         }
 
-        function run(term) {
+        function persist() {
+            saveState({ q: input.value.trim(), scrollY: window.pageYOffset || 0 });
+        }
+
+        // opts.restoreScroll — pixels to scroll to once results have rendered.
+        function run(term, opts) {
+            opts = opts || {};
+
             if (controller && typeof controller.abort === 'function') {
                 controller.abort();
             }
@@ -114,6 +164,10 @@
                     var rows = data.rows || [];
                     renderResults(results, columns, rows);
                     setStatus(rows.length ? '' : cfg.i18n.noResults);
+
+                    if (typeof opts.restoreScroll === 'number' && opts.restoreScroll > 0) {
+                        window.scrollTo(0, opts.restoreScroll);
+                    }
                 })
                 .catch(function (err) {
                     if (err && err.name === 'AbortError') {
@@ -124,10 +178,30 @@
         }
 
         var onInput = debounce(function () {
-            run(input.value.trim());
+            var term = input.value.trim();
+            reflectQueryInUrl(term);
+            persist();
+            run(term);
         }, 200);
 
         input.addEventListener('input', onInput);
+
+        // Keep the remembered scroll position current as the user reads results,
+        // and once more as they leave the page.
+        window.addEventListener('scroll', debounce(persist, 150), { passive: true });
+        window.addEventListener('pagehide', persist);
+
+        // Restore on load: an explicit ?q= in the URL wins, otherwise the last
+        // remembered term for this page. Then re-apply the saved scroll position
+        // after the results render.
+        var saved = loadState();
+        var fromUrl = urlQuery();
+        var initialTerm = (fromUrl !== null && fromUrl !== '') ? fromUrl : (saved.q || '');
+
+        if (initialTerm) {
+            input.value = initialTerm;
+            run(initialTerm, { restoreScroll: saved.scrollY });
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {

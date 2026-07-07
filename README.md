@@ -57,7 +57,18 @@ dependencies; it registers on core WordPress hooks.
 **Public page.** On activation the plugin creates a published **Lookup** page
 containing the `[lifelines_lookup]` shortcode (you can also drop that shortcode on
 any page). As you type, results are fetched from `admin-ajax.php` and rendered
-live, matching **partial values** across the configured columns.
+live, matching **partial values** across the configured columns. The results list
+is responsive — a table on wider screens, stacked cards on phones.
+
+**Remembered state.** The search term is mirrored to the URL (`?q=…`) and to
+`sessionStorage`, and the scroll position is stored too. If a visitor searches,
+navigates away, and returns to the page, their term, results, and scroll position
+are restored. A URL with `?q=` pre-fills and runs that search (shareable links).
+
+**Find button.** Place `[lifelines_find_button]` on your home page (or anywhere)
+for a call-to-action button linking to the lookup page. Attributes: `label`
+(default "Find") and `page` (a page ID, slug, or URL — defaults to the
+auto-created Lookup page).
 
 **Admin settings** (*LifeLines* menu → **Smart Lookup**):
 

@@ -4,6 +4,27 @@
     font-size: 16px;
 }
 
+/* Call-to-action button ([lifelines_find_button]) linking to the find page. */
+.lifelines-find-button {
+    display: inline-block;
+    padding: 0.75em 1.6em;
+    background: #2271b1;
+    color: #fff;
+    font-size: 1.05em;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.lifelines-find-button:hover,
+.lifelines-find-button:focus {
+    background: #135e96;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(19, 94, 150, 0.3);
+}
+
 .lifelines-lookup__field {
     position: relative;
 }
