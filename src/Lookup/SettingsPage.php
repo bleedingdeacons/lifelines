@@ -107,7 +107,7 @@ final class SettingsPage
                     <?php
                     printf(
                         /* translators: %s: maximum upload size, e.g. 64 MB */
-                        esc_html__('Upload a mysqldump containing the life_lines INSERT rows — the plugin owns the table definition, so no CREATE TABLE is needed. The data replaces the current rows, then the uploaded file is deleted. Maximum upload size: %s.', 'lifelines'),
+                        esc_html__('The data replaces the current rows, then the uploaded file is deleted. Maximum upload size: %s.', 'lifelines'),
                         esc_html($maxUpload)
                     );
                     ?>
