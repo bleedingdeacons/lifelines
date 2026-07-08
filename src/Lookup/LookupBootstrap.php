@@ -31,7 +31,7 @@ final class LookupBootstrap
 
     /**
      * Activation: create the (empty) table and ensure a public lookup page
-     * exists. Data is loaded afterwards by uploading a .sql file on the
+     * exists. Data is loaded afterwards by uploading a CSV file on the
      * LifeLines → Smart Lookup admin screen.
      */
     public static function activate(): void

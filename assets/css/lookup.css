@@ -1,7 +1,12 @@
 .lifelines-lookup {
-    max-width: 720px;
     margin: 0 auto;
     font-size: 16px;
+    /* Establish a query container so the results respond to the width actually
+       available to the lookup (e.g. a narrow embedding card) rather than the
+       viewport. The width itself is not capped — on a wide screen the table
+       uses the full available width. */
+    container-type: inline-size;
+    container-name: lifelinesLookup;
 }
 
 .lifelines-lookup__field {
@@ -60,13 +65,11 @@
     background: #f6f7f7;
 }
 
-/* Narrow screens (phones): turn each result row into a stacked "label: value"
-   card instead of a wide, horizontally-scrolling table. */
-@media (max-width: 600px) {
-    .lifelines-lookup {
-        font-size: 15px;
-    }
-
+/* Narrow containers (phones, or the lookup embedded in a small card): turn each
+   result row into a stacked "label: value" card instead of a wide,
+   horizontally-scrolling table. Keyed to the container width, not the viewport,
+   so it also stacks inside a narrow box on a wide screen. */
+@container lifelinesLookup (max-width: 600px) {
     .lifelines-lookup__results {
         overflow-x: visible;
     }
