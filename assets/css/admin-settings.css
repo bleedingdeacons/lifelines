@@ -1,0 +1,52 @@
+/* Displayed-columns reorder list on the LifeLines Smart Lookup settings page. */
+.lifelines-sortable {
+    margin: 0.5em 0 1em;
+    padding: 0;
+    list-style: none;
+    max-width: 420px;
+}
+
+.lifelines-sortable__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.lifelines-sortable__item + .lifelines-sortable__item {
+    margin-top: -1px;
+}
+
+.lifelines-sortable__handle {
+    cursor: grab;
+    color: #8c8f94;
+}
+
+.lifelines-sortable__handle:active {
+    cursor: grabbing;
+}
+
+.lifelines-sortable__item label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+}
+
+/* Placeholder shown in the gap while dragging. */
+.lifelines-sortable .ui-sortable-placeholder {
+    visibility: visible !important;
+    border: 1px dashed #2271b1;
+    background: #f0f6fc;
+    border-radius: 4px;
+}
+
+.lifelines-column-list {
+    list-style: none;
+    margin: 0.5em 0 1em;
+    padding: 0;
+}

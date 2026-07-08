@@ -2,13 +2,13 @@
 
 **A standalone real-time lookup tool for UK place, service and helpline data.**
 
-LifeLines imports a bundled UK dataset (~43k rows of place / service / helpline
-records) into its own table and exposes a fast, public **smart lookup**:
+LifeLines imports a UK dataset (place / service / helpline records) that you
+upload as a CSV into its own table, and exposes a fast, public **smart lookup**:
 partial-match search across admin-configurable columns, with results rendered in
 real time as you type. It is self-contained — it has **no plugin dependencies**
 and registers entirely on core WordPress hooks.
 
-**Version:** 1.0.1
+**Version:** 1.1.0
 **Requires:** WordPress 6.1+ · PHP 8.1+
 **Dependencies:** none
 **License:** MIT (Modified — see [License](#license))
@@ -43,16 +43,17 @@ and registers entirely on core WordPress hooks.
    the Plugins screen if cloned.
 3. On activation LifeLines creates its (empty) table and adds a public **Lookup**
    page.
-4. Load your data: on **LifeLines → Smart Lookup**, upload a `.sql` dump of the
-   `life_lines` table (see [Smart Lookup](#smart-lookup)).
+4. Load your data: on **LifeLines → Smart Lookup**, upload a CSV whose first row
+   is the column names (see [Smart Lookup](#smart-lookup)).
 
 ## Smart Lookup
 
 LifeLines provides a self-contained, real-time lookup over a UK dataset (place /
 service / helpline data) that you import into its `wp_life_lines` table.
-No data is bundled with the plugin — you upload a `.sql` dump of the `life_lines`
-table from the admin screen. It is fully **self-contained** — no plugin
-dependencies; it registers on core WordPress hooks.
+No data is bundled with the plugin — you upload a **CSV** (first row = column
+names) from the admin screen, and can export the current data back to CSV. It is
+fully **self-contained** — no plugin dependencies; it registers on core
+WordPress hooks.
 
 **Public page.** On activation the plugin creates a published **Lookup** page
 containing the `[lifelines_lookup]` shortcode (you can also drop that shortcode on
@@ -70,8 +71,10 @@ are restored. A URL with `?q=` pre-fills and runs that search (shareable links).
 - **Searchable columns** — which columns the typed text is partial-matched against.
 - **Displayed columns** — which columns (and in what order) appear in the results.
 - **Maximum results** and **minimum characters** before a search fires.
-- **Import data** — upload a `.sql` dump; it is imported and then the uploaded
-  file is deleted. A live row count is shown.
+- **Import / export data** — upload a CSV (first row = column names; unknown
+  columns ignored, blank cells stored as NULL) to replace the current rows; the
+  uploaded file is then deleted. Export downloads all rows as CSV. A live row
+  count is shown. Embedded commas/quotes are handled via `fgetcsv`/`fputcsv`.
 
 **Security.** Column identifiers are never taken from user input: admin-chosen
 columns are validated against a fixed whitelist (`Lookup\Columns`) before being
@@ -93,9 +96,9 @@ Key classes live under `src/Lookup/`: `LookupBootstrap` (wiring + activation),
 - **`LifeLines\Lookup\LookupBootstrap`** — wires the subsystem together and runs
   activation (install table, import data, create the public page).
 - **`LifeLines\Lookup\TownSchema`** — the single source of truth for the
-  `wp_life_lines` table: it creates the schema (via `dbDelta`) and imports the row
-  data from an uploaded `.sql` dump. The dump needs data only — only `life_lines`
-  INSERTs are executed, no `CREATE TABLE`.
+  `wp_life_lines` table: it creates the schema (via `dbDelta`), imports row data
+  from an uploaded CSV (batched inserts; header matched against `Columns`), and
+  exports the table to CSV.
 - **`LifeLines\Lookup\TownRepository`** — the partial-match search query.
 - **`LifeLines\Lookup\LookupController`** — the `[lifelines_lookup]` shortcode,
   front-end assets, and the public AJAX search endpoint.

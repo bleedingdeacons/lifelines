@@ -18,19 +18,38 @@ final class SettingsPage
     public const CAPABILITY  = 'manage_options';
     private const SAVE_ACTION = 'lifelines_lookup_save';
     private const IMPORT_ACTION = 'lifelines_lookup_import';
+    private const EXPORT_ACTION = 'lifelines_export';
 
     /** @var string|null Notice to show after a POST action. */
     private ?string $notice = null;
     private string $noticeType = 'success';
 
+    /** @var string|null Admin page hook suffix, for scoping asset enqueues. */
+    private ?string $hookSuffix = null;
+
     public function register(): void
     {
         add_action('admin_menu', [$this, 'registerMenu']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueueAssets']);
+        add_action('admin_post_' . self::EXPORT_ACTION, [$this, 'handleExport']);
+    }
+
+    /**
+     * Stream the current table as a CSV download (admin-post endpoint).
+     */
+    public function handleExport(): void
+    {
+        if (!current_user_can(self::CAPABILITY)) {
+            wp_die(esc_html__('You are not allowed to export this data.', 'lifelines'));
+        }
+        check_admin_referer(self::EXPORT_ACTION);
+
+        TownSchema::exportCsv(); // streams the file and exits
     }
 
     public function registerMenu(): void
     {
-        add_menu_page(
+        $this->hookSuffix = add_menu_page(
             __('LifeLines Lookup', 'lifelines'),
             __('LifeLines', 'lifelines'),
             self::CAPABILITY,
@@ -38,6 +57,31 @@ final class SettingsPage
             [$this, 'render'],
             'dashicons-search',
             58
+        );
+    }
+
+    /**
+     * Enqueue the reorder + unsaved-changes assets, only on our settings page.
+     */
+    public function enqueueAssets(string $hook): void
+    {
+        if ($this->hookSuffix === null || $hook !== $this->hookSuffix) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'lifelines-admin-settings',
+            LIFELINES_PLUGIN_URL . 'assets/css/admin-settings.css',
+            [],
+            LIFELINES_VERSION
+        );
+
+        wp_enqueue_script(
+            'lifelines-admin-settings',
+            LIFELINES_PLUGIN_URL . 'assets/js/admin-settings.js',
+            ['jquery-ui-sortable'],
+            LIFELINES_VERSION,
+            true
         );
     }
 
@@ -89,16 +133,27 @@ final class SettingsPage
                 <code>[<?php echo esc_html(LookupController::SHORTCODE); ?>]</code>
             </p>
 
+            <p>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;">
+                    <input type="hidden" name="action" value="<?php echo esc_attr(self::EXPORT_ACTION); ?>">
+                    <?php wp_nonce_field(self::EXPORT_ACTION); ?>
+                    <button type="submit" class="button" <?php disabled($rowCount === 0); ?>>
+                        <?php esc_html_e('Export current data to CSV', 'lifelines'); ?>
+                    </button>
+                </form>
+                <span class="description"><?php esc_html_e('Downloads all rows as a CSV, with the column names as the header row.', 'lifelines'); ?></span>
+            </p>
+
             <form method="post" enctype="multipart/form-data">
                 <?php wp_nonce_field(self::IMPORT_ACTION); ?>
                 <input type="hidden" name="lifelines_action" value="<?php echo esc_attr(self::IMPORT_ACTION); ?>">
                 <p>
-                    <label for="lifelines-sql-file">
-                        <strong><?php esc_html_e('Import data from a .sql file', 'lifelines'); ?></strong>
+                    <label for="lifelines-csv-file">
+                        <strong><?php esc_html_e('Import data from a CSV file', 'lifelines'); ?></strong>
                     </label>
                 </p>
                 <p>
-                    <input type="file" id="lifelines-sql-file" name="sql_file" accept=".sql" required>
+                    <input type="file" id="lifelines-csv-file" name="csv_file" accept=".csv,text/csv" required>
                     <button type="submit" class="button button-primary">
                         <?php esc_html_e('Upload &amp; import', 'lifelines'); ?>
                     </button>
@@ -107,7 +162,7 @@ final class SettingsPage
                     <?php
                     printf(
                         /* translators: %s: maximum upload size, e.g. 64 MB */
-                        esc_html__('The data replaces the current rows, then the uploaded file is deleted. Maximum upload size: %s.', 'lifelines'),
+                        esc_html__('The first row must be the column names. The data replaces the current rows, then the uploaded file is deleted. Maximum upload size: %s.', 'lifelines'),
                         esc_html($maxUpload)
                     );
                     ?>
@@ -116,7 +171,7 @@ final class SettingsPage
 
             <hr>
 
-            <form method="post">
+            <form method="post" id="lifelines-settings-form">
                 <?php wp_nonce_field(self::SAVE_ACTION); ?>
                 <input type="hidden" name="lifelines_action" value="<?php echo esc_attr(self::SAVE_ACTION); ?>">
 
@@ -128,9 +183,9 @@ final class SettingsPage
 
                 <h2><?php esc_html_e('Displayed columns', 'lifelines'); ?></h2>
                 <p class="description">
-                    <?php esc_html_e('Columns shown (in this order) in the results table.', 'lifelines'); ?>
+                    <?php esc_html_e('Tick the columns to show, and drag them to set the order they appear in the results.', 'lifelines'); ?>
                 </p>
-                <?php $this->renderColumnChecklist('display_columns', $displayColumns); ?>
+                <?php $this->renderSortableColumns('display_columns', $displayColumns); ?>
 
                 <h2><?php esc_html_e('Behaviour', 'lifelines'); ?></h2>
                 <table class="form-table" role="presentation">
@@ -186,6 +241,44 @@ final class SettingsPage
         echo '</ul></fieldset>';
     }
 
+    /**
+     * Render the displayed-columns list as a drag-sortable list. Selected columns
+     * come first, in their saved order, followed by the remaining columns. On
+     * submit the checked items post in DOM (drag) order, which LookupSettings
+     * preserves as the results display order.
+     *
+     * @param list<string> $selected
+     */
+    private function renderSortableColumns(string $name, array $selected): void
+    {
+        // Selected first (in saved order), then the rest (in canonical order).
+        $ordered = [];
+        foreach ($selected as $key) {
+            if (Columns::isValid($key)) {
+                $ordered[$key] = true;
+            }
+        }
+        foreach (Columns::keys() as $key) {
+            $ordered[$key] = true;
+        }
+
+        echo '<ul class="lifelines-sortable" id="lifelines-display-columns">';
+        foreach (array_keys($ordered) as $key) {
+            $checked = in_array($key, $selected, true);
+            printf(
+                '<li class="lifelines-sortable__item">'
+                . '<span class="lifelines-sortable__handle dashicons dashicons-menu" aria-hidden="true"></span>'
+                . '<label><input type="checkbox" name="%1$s[]" value="%2$s" %3$s> %4$s <code>%2$s</code></label>'
+                . '</li>',
+                esc_attr($name),
+                esc_attr($key),
+                checked($checked, true, false),
+                esc_html(Columns::label($key))
+            );
+        }
+        echo '</ul>';
+    }
+
     private function maybeHandlePost(): void
     {
         $action = isset($_POST['lifelines_action']) ? sanitize_key(wp_unslash((string) $_POST['lifelines_action'])) : '';
@@ -217,17 +310,17 @@ final class SettingsPage
     }
 
     /**
-     * Validate the uploaded .sql file, import it, and delete it.
+     * Validate the uploaded CSV file, import it, and delete it.
      *
      * @return array{ok:bool,message:string}
      */
     private function handleUploadAndImport(): array
     {
-        if (empty($_FILES['sql_file']) || !is_array($_FILES['sql_file'])) {
+        if (empty($_FILES['csv_file']) || !is_array($_FILES['csv_file'])) {
             return ['ok' => false, 'message' => __('No file was uploaded.', 'lifelines')];
         }
 
-        $file = $_FILES['sql_file'];
+        $file = $_FILES['csv_file'];
         $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
 
         if ($error !== UPLOAD_ERR_OK) {
@@ -240,8 +333,8 @@ final class SettingsPage
         }
 
         $originalName = sanitize_file_name((string) ($file['name'] ?? ''));
-        if (strtolower((string) pathinfo($originalName, PATHINFO_EXTENSION)) !== 'sql') {
-            return ['ok' => false, 'message' => __('Please upload a file with a .sql extension.', 'lifelines')];
+        if (strtolower((string) pathinfo($originalName, PATHINFO_EXTENSION)) !== 'csv') {
+            return ['ok' => false, 'message' => __('Please upload a file with a .csv extension.', 'lifelines')];
         }
 
         // Move to a private, randomly named path inside the uploads directory so
@@ -252,7 +345,7 @@ final class SettingsPage
         }
 
         $destination = trailingslashit($upload['basedir'])
-            . 'lifelines-import-' . wp_generate_password(12, false) . '.sql';
+            . 'lifelines-import-' . wp_generate_password(12, false) . '.csv';
 
         if (!move_uploaded_file($tmpName, $destination)) {
             return ['ok' => false, 'message' => __('Could not store the uploaded file for import.', 'lifelines')];
@@ -279,7 +372,7 @@ final class SettingsPage
             case UPLOAD_ERR_PARTIAL:
                 return __('The file was only partially uploaded. Please try again.', 'lifelines');
             case UPLOAD_ERR_NO_FILE:
-                return __('Please choose a .sql file to upload.', 'lifelines');
+                return __('Please choose a .csv file to upload.', 'lifelines');
             default:
                 return __('The file upload failed. Please try again.', 'lifelines');
         }
