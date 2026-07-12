@@ -96,10 +96,21 @@
             var tr = el('tr');
             columns.forEach(function (col) {
                 var value = row[col.key];
-                var td = el('td', null, value === null || value === undefined ? '' : value);
+                var text = value === null || value === undefined ? '' : String(value);
+                var td = el('td');
                 // Used by the responsive card layout on narrow screens to label
                 // each value with its column heading.
                 td.setAttribute('data-label', col.label);
+                // The phone-number column renders as a tap-to-call tel: link.
+                if (col.key === 'Number' && text !== '') {
+                    var a = document.createElement('a');
+                    a.className = 'lifelines-lookup__tel';
+                    a.href = 'tel:' + text.replace(/[^\d+]/g, '');
+                    a.textContent = text;
+                    td.appendChild(a);
+                } else {
+                    td.textContent = text;
+                }
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);

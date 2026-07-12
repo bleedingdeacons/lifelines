@@ -51,7 +51,7 @@ final class SettingsPage
     {
         $this->hookSuffix = add_menu_page(
             __('LifeLines Lookup', 'lifelines'),
-            __('LifeLines', 'lifelines'),
+            __('Life Lines', 'lifelines'),
             self::CAPABILITY,
             self::MENU_SLUG,
             [$this, 'render'],
