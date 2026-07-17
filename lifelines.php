@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * Plugin Name: LifeLines
  * Description: A standalone real-time lookup tool for UK place, service and helpline data, with admin-configurable searchable and displayed columns.
- * Version: 1.2.1
+ * Version: 1.2.2
  * Build date: 2026/07/07
  * Requires at least: 6.1
  * Requires PHP: 8.1

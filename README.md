@@ -8,7 +8,7 @@ partial-match search across admin-configurable columns, with results rendered in
 real time as you type. It is self-contained — it has **no plugin dependencies**
 and registers entirely on core WordPress hooks.
 
-**Version:** 1.2.1
+**Version:** 1.2.2
 **Requires:** WordPress 6.1+ · PHP 8.1+
 **Dependencies:** none
 **License:** MIT (Modified — see [License](#license))
