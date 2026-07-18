@@ -73,6 +73,14 @@ jobs:
         # The build is what /bump ships, so a broken build must fail the PR.
         run: composer build:production
 
+      - name: PHPUnit
+        # A gate from the outset: the suite is green and small, and it covers
+        # the Columns whitelist (the guard that makes back-ticking column
+        # identifiers into SQL safe) and TownSchema's CSV escaping, where a
+        # trailing backslash previously swallowed the following row and lost a
+        # town on import.
+        run: composer test
+
       # --- Advisory --------------------------------------------------------
       # Reported but not yet enforced. Promote to a gate once a repo is green.
 
