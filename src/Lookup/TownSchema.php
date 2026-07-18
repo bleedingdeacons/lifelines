@@ -23,6 +23,45 @@ final class TownSchema
     /** Columns stored as numbers rather than quoted strings. */
     private const NUMERIC = ['ID', 'Latitude', 'Longitude', 'Easting', 'Northing'];
 
+    /**
+     * Escape character for all CSV I/O in this class.
+     *
+     * '' disables PHP's legacy backslash escaping, which is not part of
+     * RFC 4180 and is not what Excel or Google Sheets emit. With the old
+     * default, a quoted field ending in a backslash escaped its own closing
+     * quote: the parser ran past the end of the record and merged the next
+     * line into it, so two rows silently became one and a town was lost from
+     * the import. It is also the PHP 9 default.
+     *
+     * Defined once, and used through readCsvRow()/writeCsvRow() below, because
+     * import() and exportCsv() must agree — the export is meant to round-trip
+     * back through the importer. Four separate call sites previously each
+     * carried their own escape argument, which is exactly how they drifted.
+     */
+    private const CSV_ESCAPE = '';
+
+    /**
+     * Read one CSV record, or false at end of file.
+     *
+     * @param resource $handle
+     * @return array<int, string|null>|false
+     */
+    private static function readCsvRow($handle): array|false
+    {
+        return fgetcsv($handle, 0, ',', '"', self::CSV_ESCAPE);
+    }
+
+    /**
+     * Write one CSV record.
+     *
+     * @param resource          $handle
+     * @param array<int, mixed> $fields
+     */
+    private static function writeCsvRow($handle, array $fields): void
+    {
+        fputcsv($handle, $fields, ',', '"', self::CSV_ESCAPE);
+    }
+
     public static function tableName(): string
     {
         global $wpdb;
@@ -97,11 +136,10 @@ final class TownSchema
      * Import a CSV file into the prefixed table, replacing any existing rows.
      *
      * The first row must be the column names (matched against the Columns
-     * whitelist — unknown headers are ignored). Fields are parsed with fgetcsv
-     * using escape: '' (RFC 4180), so embedded commas, quotes and newlines
+     * whitelist — unknown headers are ignored). Fields are parsed via
+     * readCsvRow(), i.e. RFC 4180, so embedded commas, quotes and newlines
      * inside quoted values are handled correctly and a backslash is ordinary
-     * data rather than an escape character — see the escape note on the
-     * fgetcsv calls below.
+     * data rather than an escape character — see CSV_ESCAPE.
      * If there is no ID column (or a blank ID cell) a sequential ID is assigned.
      * Rows are inserted in batches for speed; values are escaped via esc_sql.
      *
@@ -120,14 +158,7 @@ final class TownSchema
             return ['ok' => false, 'inserted' => 0, 'errors' => 0, 'message' => 'Could not open the file for reading.'];
         }
 
-        // escape: '' disables PHP's legacy backslash escaping. It is not part
-        // of RFC 4180 and is not what Excel or Google Sheets emit: with the
-        // old default, a quoted field ending in a backslash escaped its own
-        // closing quote, so the parser ran past the end of the record and
-        // merged the next line into it — two rows silently became one and a
-        // town was lost from the import. It is also the PHP 9 default, so this
-        // is explicit rather than relying on a default that is changing.
-        $header = fgetcsv($handle, 0, ',', '"', '');
+        $header = self::readCsvRow($handle);
         if (!is_array($header)) {
             fclose($handle);
             return ['ok' => false, 'inserted' => 0, 'errors' => 0, 'message' => 'The CSV file is empty.'];
@@ -178,7 +209,7 @@ final class TownSchema
         };
 
         // escape: '' — see the note on the header read above.
-        while (($row = fgetcsv($handle, 0, ',', '"', '')) !== false) {
+        while (($row = self::readCsvRow($handle)) !== false) {
             if (!is_array($row) || $row === [null]) {
                 continue; // blank line
             }
@@ -246,7 +277,7 @@ final class TownSchema
         header('Content-Disposition: attachment; filename="life_lines-' . gmdate('Ymd') . '.csv"');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, $columns, ',', '"', '');
+        self::writeCsvRow($out, $columns);
 
         $offset = 0;
         $chunk  = 2000;
@@ -260,7 +291,7 @@ final class TownSchema
                 foreach ($columns as $c) {
                     $line[] = $row[$c] ?? '';
                 }
-                fputcsv($out, $line, ',', '"', '');
+                self::writeCsvRow($out, $line);
             }
             $offset += $chunk;
         } while (is_array($rows) && count($rows) === $chunk);
