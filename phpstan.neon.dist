@@ -1,0 +1,26 @@
+# Committed PHPStan config.
+#
+# phpstan.neon (no .dist) is gitignored and, if present, overrides this
+# file entirely — keep personal tweaks there. This .dist is what CI uses:
+# before it existed, CI ran PHPStan with no config at all, so the step
+# analysed nothing and reported nothing.
+
+includes:
+    - phpstan-baseline.neon
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 5
+    # An ignoreErrors pattern that stops matching is reported as an error by
+    # default, so a stale pattern would fail the gate — and whether a pattern
+    # matches depends on which sibling plugins and stubs are present, which
+    # differs between a developer's checkout and CI. Don't let that break the
+    # build; dead patterns are tidied when noticed, not enforced.
+    reportUnmatchedIgnoredErrors: false
+    paths:
+        - src
+    excludePaths:
+        - tests
+    ignoreErrors:
+        - '#Function get_plugin_data not found#'
+        - '#Function get_field not found#'

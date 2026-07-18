@@ -1,0 +1,46 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
+			count: 1
+			path: src/Lookup/LookupBootstrap.php
+
+		-
+			message: "#^is_wp_error\\(int\\<0, max\\>\\) will always evaluate to false\\.$#"
+			count: 1
+			path: src/Lookup/LookupBootstrap.php
+
+		-
+			message: "#^Constant LIFELINES_PLUGIN_URL not found\\.$#"
+			count: 2
+			path: src/Lookup/LookupController.php
+
+		-
+			message: "#^Constant LIFELINES_VERSION not found\\.$#"
+			count: 2
+			path: src/Lookup/LookupController.php
+
+		-
+			message: "#^Constant LIFELINES_PLUGIN_URL not found\\.$#"
+			count: 2
+			path: src/Lookup/SettingsPage.php
+
+		-
+			message: "#^Constant LIFELINES_VERSION not found\\.$#"
+			count: 2
+			path: src/Lookup/SettingsPage.php
+
+		-
+			message: "#^Comparison operation \"\\>\" between 0 and 0 is always false\\.$#"
+			count: 2
+			path: src/Lookup/TownSchema.php
+
+		-
+			message: "#^Result of && is always false\\.$#"
+			count: 1
+			path: src/Lookup/TownSchema.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 1
+			path: src/Lookup/TownSchema.php
