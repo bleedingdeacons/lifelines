@@ -97,8 +97,11 @@ final class TownSchema
      * Import a CSV file into the prefixed table, replacing any existing rows.
      *
      * The first row must be the column names (matched against the Columns
-     * whitelist — unknown headers are ignored). Fields are parsed with fgetcsv,
-     * so embedded commas / quotes inside quoted values are handled correctly.
+     * whitelist — unknown headers are ignored). Fields are parsed with fgetcsv
+     * using escape: '' (RFC 4180), so embedded commas, quotes and newlines
+     * inside quoted values are handled correctly and a backslash is ordinary
+     * data rather than an escape character — see the escape note on the
+     * fgetcsv calls below.
      * If there is no ID column (or a blank ID cell) a sequential ID is assigned.
      * Rows are inserted in batches for speed; values are escaped via esc_sql.
      *
@@ -117,7 +120,14 @@ final class TownSchema
             return ['ok' => false, 'inserted' => 0, 'errors' => 0, 'message' => 'Could not open the file for reading.'];
         }
 
-        $header = fgetcsv($handle);
+        // escape: '' disables PHP's legacy backslash escaping. It is not part
+        // of RFC 4180 and is not what Excel or Google Sheets emit: with the
+        // old default, a quoted field ending in a backslash escaped its own
+        // closing quote, so the parser ran past the end of the record and
+        // merged the next line into it — two rows silently became one and a
+        // town was lost from the import. It is also the PHP 9 default, so this
+        // is explicit rather than relying on a default that is changing.
+        $header = fgetcsv($handle, 0, ',', '"', '');
         if (!is_array($header)) {
             fclose($handle);
             return ['ok' => false, 'inserted' => 0, 'errors' => 0, 'message' => 'The CSV file is empty.'];
@@ -167,7 +177,8 @@ final class TownSchema
             $batch = [];
         };
 
-        while (($row = fgetcsv($handle)) !== false) {
+        // escape: '' — see the note on the header read above.
+        while (($row = fgetcsv($handle, 0, ',', '"', '')) !== false) {
             if (!is_array($row) || $row === [null]) {
                 continue; // blank line
             }
@@ -217,6 +228,10 @@ final class TownSchema
      * The header row is the column names; values are written with fputcsv, which
      * quotes any field containing a comma, quote or newline. Rows are streamed in
      * chunks so a large table doesn't have to be held in memory at once.
+     *
+     * Writes with escape: '' to match import()'s reader — this file is meant to
+     * round-trip back through the importer, so both ends must agree that a
+     * backslash is data rather than an escape character.
      */
     public static function exportCsv(): void
     {
@@ -231,7 +246,7 @@ final class TownSchema
         header('Content-Disposition: attachment; filename="life_lines-' . gmdate('Ymd') . '.csv"');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, $columns);
+        fputcsv($out, $columns, ',', '"', '');
 
         $offset = 0;
         $chunk  = 2000;
@@ -245,7 +260,7 @@ final class TownSchema
                 foreach ($columns as $c) {
                     $line[] = $row[$c] ?? '';
                 }
-                fputcsv($out, $line);
+                fputcsv($out, $line, ',', '"', '');
             }
             $offset += $chunk;
         } while (is_array($rows) && count($rows) === $chunk);
