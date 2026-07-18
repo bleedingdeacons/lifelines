@@ -1,5 +1,10 @@
 # LifeLines
 
+[![CI](https://github.com/bleedingdeacons/lifelines/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bleedingdeacons/lifelines/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-1.2.4-blue)
+![PHP](https://img.shields.io/badge/php-8.1%2B-777bb4)
+![Licence](https://img.shields.io/badge/licence-MIT%20(Modified)-green)
+
 **A standalone real-time lookup tool for UK place, service and helpline data.**
 
 LifeLines imports a UK dataset (place / service / helpline records) that you
@@ -8,8 +13,6 @@ partial-match search across admin-configurable columns, with results rendered in
 real time as you type. It is self-contained — it has **no plugin dependencies**
 and registers entirely on core WordPress hooks.
 
-**Version:** 1.2.4
-**Requires:** WordPress 6.1+ · PHP 8.1+
 **Dependencies:** none
 **License:** MIT (Modified — see [License](#license))
 **Author:** [The Bleeding Deacons](mailto:thebleedingdeacons@gmail.com)
