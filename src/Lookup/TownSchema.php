@@ -210,7 +210,9 @@ final class TownSchema
 
         // escape: '' — see the note on the header read above.
         while (($row = self::readCsvRow($handle)) !== false) {
-            if (!is_array($row) || $row === [null]) {
+            // readCsvRow() returns array|false and the loop condition already
+            // excluded false, so only the blank-line shape needs testing.
+            if ($row === [null]) {
                 continue; // blank line
             }
 
