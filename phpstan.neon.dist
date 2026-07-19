@@ -11,6 +11,13 @@ includes:
 
 parameters:
     level: 5
+    # PHPStan 2 proves a condition dead when PHPDoc says it cannot happen.
+    # In WordPress plugin code PHPDoc is aspirational: values arrive from
+    # get_field(), HTTP responses, scraped HTML and $_POST, none of which the
+    # annotation can guarantee. Trusting it would mean deleting defensive
+    # guards that are correct at runtime, so PHPDoc informs types but does not
+    # prove conditions. Native types are still checked normally.
+    treatPhpDocTypesAsCertain: false
     # Analyse as PHP 8.1 — the plugin's floor and the version CI runs.
     # Without this PHPStan analyses using whatever PHP is executing it,
     # so a developer on 8.5 and CI on 8.1 disagree and the committed
@@ -27,5 +34,17 @@ parameters:
     excludePaths:
         - tests
     ignoreErrors:
+        # Two false positives with the same root. $batch, $errors and $inserted
+        # are captured by reference into the flush closure, and PHPStan does not
+        # model the closure's writes back into the enclosing scope: it still sees
+        # their initial values ([] and 0) and concludes the comparisons are
+        # decided. At runtime the closure fills $batch and increments $errors, so
+        # both checks are live and must stay.
+        -
+            message: '#Strict comparison using === between array\{\} and array\{\} will always evaluate to true#'
+            path: src/Lookup/TownSchema.php
+        -
+            message: '#Strict comparison using === between 0 and 0 will always evaluate to true#'
+            path: src/Lookup/TownSchema.php
         - '#Function get_plugin_data not found#'
         - '#Function get_field not found#'
