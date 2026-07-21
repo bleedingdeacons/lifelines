@@ -1,6 +1,7 @@
 # LifeLines
 
 [![CI](https://github.com/bleedingdeacons/lifelines/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bleedingdeacons/lifelines/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/bleedingdeacons/lifelines/badge.svg?branch=main)](https://coveralls.io/github/bleedingdeacons/lifelines?branch=main)
 ![PHPStan](https://img.shields.io/badge/PHPStan-level%205-brightgreen)
 ![Version](https://img.shields.io/badge/version-1.2.12-blue)
 ![PHP](https://img.shields.io/badge/php-8.1%2B-777bb4)
