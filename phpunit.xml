@@ -17,5 +17,15 @@
         <include>
             <directory suffix=".php">src</directory>
         </include>
+        <exclude>
+            <!--
+                The admin settings screen: WordPress menu/enqueue hooks, the
+                HTML form render, and file-upload handling (move_uploaded_file /
+                wp_upload_dir) exercised through WordPress at runtime rather
+                than in unit tests. Excluded from the coverage denominator, as
+                the other suite plugins exclude their src/Admin layers.
+            -->
+            <file>src/Lookup/SettingsPage.php</file>
+        </exclude>
     </source>
 </phpunit>
