@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace LifeLines\Tests\Lookup;
 
 use LifeLines\Lookup\Columns;
-use PHPUnit\Framework\TestCase;
+use BleedingDeacons\WpMocks\TestCase;
+use BleedingDeacons\WpMocks\WpState;
 
 /**
  * Columns is the security linchpin of the lookup feature: column identifiers

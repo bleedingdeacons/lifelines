@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace LifeLines\Tests\Lookup;
 
 use LifeLines\Lookup\LookupSettings;
-use PHPUnit\Framework\TestCase;
+use BleedingDeacons\WpMocks\TestCase;
+use BleedingDeacons\WpMocks\WpState;
 
 /**
  * Covers LookupSettings: reading the stored wp_options row (with whitelist
@@ -19,12 +20,12 @@ class LookupSettingsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $GLOBALS['lifelines_test_options'] = [];
+        WpState::$options = [];
     }
 
     protected function tearDown(): void
     {
-        $GLOBALS['lifelines_test_options'] = [];
+        WpState::$options = [];
         parent::tearDown();
     }
 
@@ -40,7 +41,7 @@ class LookupSettingsTest extends TestCase
 
     public function testStoredColumnsAreWhitelisted(): void
     {
-        $GLOBALS['lifelines_test_options'][LookupSettings::OPTION] = [
+        WpState::$options[LookupSettings::OPTION] = [
             'search_columns'  => ['Place', 'Nonsense', 'Postcode'],
             'display_columns' => ['County', 'DROP TABLE'],
         ];
@@ -52,7 +53,7 @@ class LookupSettingsTest extends TestCase
 
     public function testEmptyStoredColumnsFallBackToDefaults(): void
     {
-        $GLOBALS['lifelines_test_options'][LookupSettings::OPTION] = [
+        WpState::$options[LookupSettings::OPTION] = [
             'search_columns'  => ['Nonsense'],
             'display_columns' => [],
         ];
@@ -64,7 +65,7 @@ class LookupSettingsTest extends TestCase
 
     public function testNonArrayStoredOptionIsIgnored(): void
     {
-        $GLOBALS['lifelines_test_options'][LookupSettings::OPTION] = 'corrupt';
+        WpState::$options[LookupSettings::OPTION] = 'corrupt';
 
         $settings = new LookupSettings();
         $this->assertSame(50, $settings->resultLimit());
@@ -72,16 +73,16 @@ class LookupSettingsTest extends TestCase
 
     public function testResultLimitIsClamped(): void
     {
-        $GLOBALS['lifelines_test_options'][LookupSettings::OPTION] = ['result_limit' => 9999];
+        WpState::$options[LookupSettings::OPTION] = ['result_limit' => 9999];
         $this->assertSame(LookupSettings::MAX_RESULT_LIMIT, (new LookupSettings())->resultLimit());
 
-        $GLOBALS['lifelines_test_options'][LookupSettings::OPTION] = ['result_limit' => 0];
+        WpState::$options[LookupSettings::OPTION] = ['result_limit' => 0];
         $this->assertSame(1, (new LookupSettings())->resultLimit());
     }
 
     public function testMinCharsIsAtLeastOne(): void
     {
-        $GLOBALS['lifelines_test_options'][LookupSettings::OPTION] = ['min_chars' => 0];
+        WpState::$options[LookupSettings::OPTION] = ['min_chars' => 0];
         $this->assertSame(1, (new LookupSettings())->minChars());
     }
 
@@ -94,7 +95,7 @@ class LookupSettingsTest extends TestCase
             'min_chars'       => 3,
         ]);
 
-        $stored = $GLOBALS['lifelines_test_options'][LookupSettings::OPTION];
+        $stored = WpState::$options[LookupSettings::OPTION];
         $this->assertSame(['Place'], $stored['search_columns']);
         $this->assertSame(['County', 'Number'], $stored['display_columns']);
         $this->assertSame(LookupSettings::MAX_RESULT_LIMIT, $stored['result_limit']);
@@ -110,7 +111,7 @@ class LookupSettingsTest extends TestCase
             'min_chars'       => 1,
         ]);
 
-        $stored = $GLOBALS['lifelines_test_options'][LookupSettings::OPTION];
+        $stored = WpState::$options[LookupSettings::OPTION];
         $this->assertSame(LookupSettings::defaults()['search_columns'], $stored['search_columns']);
         $this->assertSame(LookupSettings::defaults()['display_columns'], $stored['display_columns']);
     }

@@ -6,8 +6,9 @@ namespace LifeLines\Tests\Lookup;
 
 use LifeLines\Lookup\LookupController;
 use LifeLines\Lookup\TownRepository;
-use LifeLinesJsonResponse;
-use PHPUnit\Framework\TestCase;
+use BleedingDeacons\WpMocks\Exceptions\JsonResponseException;
+use BleedingDeacons\WpMocks\TestCase;
+use BleedingDeacons\WpMocks\WpState;
 
 /**
  * Covers LookupController: hook/asset registration, the shortcode HTML render,
@@ -22,14 +23,14 @@ class LookupControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $GLOBALS['lifelines_test_options'] = [];
+        WpState::$options = [];
         unset($GLOBALS['lifelines_test_rows'], $_GET['q']);
         $this->controller = new LookupController(new TownRepository());
     }
 
     protected function tearDown(): void
     {
-        $GLOBALS['lifelines_test_options'] = [];
+        WpState::$options = [];
         unset($_GET['q']);
         parent::tearDown();
     }
@@ -63,7 +64,7 @@ class LookupControllerTest extends TestCase
         try {
             $this->controller->handleAjax();
             $this->fail('Expected wp_send_json_success to be signalled.');
-        } catch (LifeLinesJsonResponse $response) {
+        } catch (JsonResponseException $response) {
             $this->assertSame([], $response->data['rows']);
             $this->assertNotEmpty($response->data['columns']);
         }
@@ -79,7 +80,7 @@ class LookupControllerTest extends TestCase
         try {
             $this->controller->handleAjax();
             $this->fail('Expected wp_send_json_success to be signalled.');
-        } catch (LifeLinesJsonResponse $response) {
+        } catch (JsonResponseException $response) {
             $this->assertCount(1, $response->data['rows']);
             $this->assertSame('Bath', $response->data['rows'][0]['Place']);
         }

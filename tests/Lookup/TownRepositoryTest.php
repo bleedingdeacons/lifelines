@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace LifeLines\Tests\Lookup;
 
 use LifeLines\Lookup\TownRepository;
-use PHPUnit\Framework\TestCase;
+use BleedingDeacons\WpMocks\TestCase;
+use BleedingDeacons\WpMocks\WpState;
 
 /**
  * Covers TownRepository::search — the empty-term and empty-whitelist guards,
