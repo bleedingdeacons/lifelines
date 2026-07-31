@@ -4,11 +4,28 @@ declare(strict_types=1);
 
 // PHPUnit bootstrap.
 //
-// LifeLines is standalone — it has no Unity-ecosystem dependencies — so the
-// suite needs nothing but the plugin's own autoloader plus the small amount of
-// WordPress surface its classes touch at load time.
+// LifeLines is standalone — it has no Unity-ecosystem dependencies — but the
+// WordPress surface its classes touch is the same WordPress every other plugin
+// here touches, so it comes from bleedingdeacons/wp-mocks rather than being
+// hand-rolled: options, escaping and i18n, the asset and shortcode registry,
+// wp_send_json_success(), wp_insert_post() and friends.
+//
+// wp-mocks' bootstrap loads Patchwork before anything patchable, so anything
+// below that defines WordPress functions or classes of its own must stay after
+// the Bootstrap::load() call, not before it.
+//
+// Only the `wordpress` group is loaded. LifeLines has no REST surface, uses no
+// ACF, and does not depend on Sentinel's logger.
+
+use BleedingDeacons\WpMocks\Bootstrap;
+use BleedingDeacons\WpMocks\WpState;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+Bootstrap::load(['wordpress']);
+
+// Makes plugins_url()/plugin_dir_url() answer with LifeLines' own path.
+WpState::$pluginSlug = 'lifelines';
 
 // Every LifeLines class begins with `if (!defined('ABSPATH')) { exit; }` to
 // block direct web access, so the constant has to exist before any of them is
@@ -28,9 +45,6 @@ if (!file_exists($lifelinesUpgradeDir . 'upgrade.php')) {
     file_put_contents($lifelinesUpgradeDir . 'upgrade.php', "<?php\n");
 }
 
-if (!defined('ARRAY_A')) {
-    define('ARRAY_A', 'ARRAY_A'); // $wpdb->get_results() output-type flag
-}
 if (!defined('LIFELINES_PLUGIN_URL')) {
     define('LIFELINES_PLUGIN_URL', 'http://example.test/wp-content/plugins/lifelines/');
 }
@@ -38,34 +52,32 @@ if (!defined('LIFELINES_VERSION')) {
     define('LIFELINES_VERSION', '9.9.9-test');
 }
 
-// ── Minimal WordPress surface ────────────────────────────────────────────
-//
-// LifeLines is standalone, so these are hand-rolled stubs (no WP_Mock): just
-// enough of the handful of core functions its classes call, backed by
-// process-global state the tests set up and assert against. Not faithful
-// implementations — see each note.
-
-/** Signals a wp_send_json_success() call so a test can inspect the payload. */
-class LifeLinesJsonResponse extends \RuntimeException
-{
-    /** @param array<string,mixed> $data */
-    public function __construct(public array $data)
+// dbDelta() is not part of the shared stubs: it lives in wp-admin/includes and
+// is only reachable after the require above, which is a plugin-specific path.
+if (!function_exists('dbDelta')) {
+    function dbDelta(string $sql): array
     {
-        parent::__construct('wp_send_json_success');
-    }
-}
-
-if (!class_exists('WP_Error')) {
-    class WP_Error
-    {
-        public function __construct(public string $code = '', public string $message = '')
-        {
-        }
+        return [];
     }
 }
 
 /**
- * Stand-in for $wpdb. Reads/writes are driven by $GLOBALS the tests set:
+ * Stand-in for $wpdb.
+ *
+ * Kept local rather than using wp-mocks' Doubles\FakeWpdb, which answers every
+ * get_var() with one queued scalar and every get_results() with one queued set
+ * of rows. LifeLines needs more than that at the same time:
+ *
+ *  - get_var() has to answer "SHOW TABLES LIKE" and "COUNT(*)" differently
+ *    within a single test, since TownRepository probes for the table and then
+ *    counts rows in it;
+ *  - get_results() has to be a *queue*, so exportCsv()'s chunked loop can be
+ *    handed a full chunk and then a simulated read failure to unwind it before
+ *    its terminal exit();
+ *  - query() has to report the number of value-tuples in an INSERT, which is
+ *    how import() totals the rows it wrote.
+ *
+ * Reads and writes are driven by $GLOBALS the tests set:
  *  - lifelines_test_rows       -> get_results() payload
  *  - lifelines_test_table_ok   -> whether the table "exists"
  *  - lifelines_test_count      -> COUNT(*) result
@@ -147,204 +159,6 @@ class FakeWpdb
             return substr_count($query, '),(') + 1;
         }
         return true;
-    }
-}
-
-if (!function_exists('dbDelta')) {
-    function dbDelta(string $sql): array
-    {
-        return [];
-    }
-}
-
-if (!function_exists('get_option')) {
-    function get_option(string $key, mixed $default = false): mixed
-    {
-        return $GLOBALS['lifelines_test_options'][$key] ?? $default;
-    }
-}
-if (!function_exists('update_option')) {
-    function update_option(string $key, mixed $value): bool
-    {
-        $GLOBALS['lifelines_test_options'][$key] = $value;
-        return true;
-    }
-}
-if (!function_exists('wp_parse_args')) {
-    /**
-     * @param array<string,mixed> $args
-     * @param array<string,mixed> $defaults
-     * @return array<string,mixed>
-     */
-    function wp_parse_args(array $args, array $defaults = []): array
-    {
-        return array_merge($defaults, $args);
-    }
-}
-if (!function_exists('esc_sql')) {
-    function esc_sql(string $value): string
-    {
-        return addslashes($value);
-    }
-}
-if (!function_exists('__')) {
-    function __(string $text, string $domain = 'default'): string
-    {
-        return $text;
-    }
-}
-if (!function_exists('esc_html__')) {
-    function esc_html__(string $text, string $domain = 'default'): string
-    {
-        return $text;
-    }
-}
-if (!function_exists('esc_html')) {
-    function esc_html(string $text): string
-    {
-        return $text;
-    }
-}
-if (!function_exists('esc_attr')) {
-    function esc_attr(string $text): string
-    {
-        return $text;
-    }
-}
-if (!function_exists('esc_url')) {
-    function esc_url(string $url): string
-    {
-        return $url;
-    }
-}
-if (!function_exists('esc_html_e')) {
-    function esc_html_e(string $text, string $domain = 'default'): void
-    {
-        echo $text;
-    }
-}
-if (!function_exists('add_action')) {
-    function add_action(string $hook, callable $cb, int $priority = 10, int $args = 1): bool
-    {
-        return true;
-    }
-}
-if (!function_exists('add_shortcode')) {
-    function add_shortcode(string $tag, callable $cb): void
-    {
-    }
-}
-if (!function_exists('wp_register_style')) {
-    function wp_register_style(string $handle, string $src, array $deps = [], mixed $ver = false): bool
-    {
-        return true;
-    }
-}
-if (!function_exists('wp_register_script')) {
-    function wp_register_script(string $handle, string $src, array $deps = [], mixed $ver = false, bool $footer = false): bool
-    {
-        return true;
-    }
-}
-if (!function_exists('wp_enqueue_style')) {
-    function wp_enqueue_style(string $handle, string $src = '', array $deps = [], mixed $ver = false): void
-    {
-    }
-}
-if (!function_exists('wp_enqueue_script')) {
-    function wp_enqueue_script(string $handle, string $src = '', array $deps = [], mixed $ver = false, bool $footer = false): void
-    {
-    }
-}
-if (!function_exists('wp_localize_script')) {
-    function wp_localize_script(string $handle, string $name, array $data): bool
-    {
-        return true;
-    }
-}
-if (!function_exists('wp_unique_id')) {
-    function wp_unique_id(string $prefix = ''): string
-    {
-        static $n = 0;
-        return $prefix . (++$n);
-    }
-}
-if (!function_exists('admin_url')) {
-    function admin_url(string $path = ''): string
-    {
-        return 'http://example.test/wp-admin/' . $path;
-    }
-}
-if (!function_exists('shortcode_atts')) {
-    /**
-     * @param array<string,mixed> $defaults
-     * @param array<string,mixed> $atts
-     * @return array<string,mixed>
-     */
-    function shortcode_atts(array $defaults, array $atts, string $shortcode = ''): array
-    {
-        return array_merge($defaults, array_intersect_key($atts, $defaults));
-    }
-}
-if (!function_exists('sanitize_text_field')) {
-    function sanitize_text_field(string $str): string
-    {
-        return trim(strip_tags($str));
-    }
-}
-if (!function_exists('wp_unslash')) {
-    function wp_unslash(string $value): string
-    {
-        return stripslashes($value);
-    }
-}
-if (!function_exists('wp_send_json_success')) {
-    /**
-     * @param array<string,mixed> $data
-     */
-    function wp_send_json_success(array $data = []): void
-    {
-        // Real WP echoes JSON and exits; throw instead so a test can catch the
-        // payload without terminating the process.
-        throw new LifeLinesJsonResponse($data);
-    }
-}
-if (!function_exists('is_admin')) {
-    function is_admin(): bool
-    {
-        return $GLOBALS['lifelines_test_is_admin'] ?? false;
-    }
-}
-if (!function_exists('wp_insert_post')) {
-    /**
-     * @param array<string,mixed> $post
-     */
-    function wp_insert_post(array $post): mixed
-    {
-        return $GLOBALS['lifelines_test_insert_id'] ?? 123;
-    }
-}
-if (!function_exists('is_wp_error')) {
-    function is_wp_error(mixed $thing): bool
-    {
-        return $thing instanceof WP_Error;
-    }
-}
-if (!function_exists('get_post_status')) {
-    function get_post_status(int $id): string|false
-    {
-        return $GLOBALS['lifelines_test_post_status'] ?? false;
-    }
-}
-if (!function_exists('get_permalink')) {
-    function get_permalink(int $id): string|false
-    {
-        return $GLOBALS['lifelines_test_permalink'] ?? 'http://example.test/lookup/';
-    }
-}
-if (!function_exists('nocache_headers')) {
-    function nocache_headers(): void
-    {
     }
 }
 

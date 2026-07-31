@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace LifeLines\Tests\Lookup;
 
 use LifeLines\Lookup\TownSchema;
-use PHPUnit\Framework\TestCase;
+use BleedingDeacons\WpMocks\TestCase;
+use BleedingDeacons\WpMocks\WpState;
 use ReflectionMethod;
 
 /**
