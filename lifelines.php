@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Build date: 2026/07/07
  * Requires at least: 6.1
  * Requires PHP: 8.1
- * GitHub Plugin URI: https://github.com/thebleedingdeacons/lifelines
+ * GitHub Plugin URI: https://github.com/bleedingdeacons/lifelines
  * GitHub Branch: main
  * Author: The Bleeding Deacons
  * Author URI: https://github.com/bleedingdeacons/lifelines
