@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Plugin Name: LifeLines
  * Description: A standalone real-time lookup tool for UK place, service and helpline data, with admin-configurable searchable and displayed columns.
@@ -17,6 +15,8 @@ declare(strict_types=1);
  * Contact: thebleedingdeacons@gmail.com
  * License: MIT (Modified)
  */
+
+declare(strict_types=1);
 
 if (!defined('ABSPATH')) {
     exit;
