@@ -279,6 +279,14 @@ final class TownSchema
         header('Content-Disposition: attachment; filename="life_lines-' . gmdate('Ymd') . '.csv"');
 
         $out = fopen('php://output', 'w');
+
+        // Nothing can be streamed if the output wrapper won't open. Bail
+        // rather than letting fputcsv() fatal on a false handle — the headers
+        // are already sent, so an empty download is the only graceful exit.
+        if ($out === false) {
+            exit;
+        }
+
         self::writeCsvRow($out, $columns);
 
         $offset = 0;

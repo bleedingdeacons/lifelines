@@ -98,7 +98,10 @@ final class SettingsPage
         $displayColumns = $settings->displayColumns();
         $rowCount       = TownSchema::count();
         $lookupPageUrl  = $this->lookupPageUrl();
-        $maxUpload      = size_format(wp_max_upload_size());
+        // size_format() returns false if it cannot parse the number; show the
+        // raw byte count rather than an empty size in the sentence below.
+        $maxUploadBytes = wp_max_upload_size();
+        $maxUpload      = size_format($maxUploadBytes) ?: (string) $maxUploadBytes;
 
         ?>
         <div class="wrap">
