@@ -1,46 +1,43 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
-			count: 1
-			path: src/Lookup/LookupBootstrap.php
-
-		-
-			message: "#^is_wp_error\\(int\\<0, max\\>\\) will always evaluate to false\\.$#"
-			count: 1
-			path: src/Lookup/LookupBootstrap.php
-
-		-
-			message: "#^Constant LIFELINES_PLUGIN_URL not found\\.$#"
+			message: '#^Constant LIFELINES_PLUGIN_URL not found\.$#'
+			identifier: constant.notFound
 			count: 2
 			path: src/Lookup/LookupController.php
 
 		-
-			message: "#^Constant LIFELINES_VERSION not found\\.$#"
+			message: '#^Constant LIFELINES_VERSION not found\.$#'
+			identifier: constant.notFound
 			count: 2
 			path: src/Lookup/LookupController.php
 
 		-
-			message: "#^Constant LIFELINES_PLUGIN_URL not found\\.$#"
+			message: '#^Constant LIFELINES_PLUGIN_URL not found\.$#'
+			identifier: constant.notFound
 			count: 2
 			path: src/Lookup/SettingsPage.php
 
 		-
-			message: "#^Constant LIFELINES_VERSION not found\\.$#"
+			message: '#^Constant LIFELINES_VERSION not found\.$#'
+			identifier: constant.notFound
 			count: 2
 			path: src/Lookup/SettingsPage.php
 
 		-
-			message: "#^Comparison operation \"\\>\" between 0 and 0 is always false\\.$#"
+			message: '#^Comparison operation "\>" between 0 and 0 is always false\.$#'
+			identifier: greater.alwaysFalse
 			count: 2
 			path: src/Lookup/TownSchema.php
 
 		-
-			message: "#^Result of && is always false\\.$#"
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
 			count: 1
 			path: src/Lookup/TownSchema.php
 
 		-
-			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
 			count: 1
 			path: src/Lookup/TownSchema.php
