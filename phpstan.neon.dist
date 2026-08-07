@@ -46,5 +46,7 @@ parameters:
         -
             message: '#Strict comparison using === between 0 and 0 will always evaluate to true#'
             path: src/Lookup/TownSchema.php
-        - '#Function get_plugin_data not found#'
-        - '#Function get_field not found#'
+        # get_plugin_data and get_field entries used to follow. Both were
+        # removed once the stubs resolved them and they stopped matching —
+        # get_field despite LifeLines having no ACF dependency at all, which is
+        # why that one was dead rather than merely redundant.
