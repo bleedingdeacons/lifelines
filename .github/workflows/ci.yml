@@ -5,13 +5,27 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  # A merge is the release, so without this there is no way to cut one when the
+  # merge's own run does not survive. Added after the 2026-08-06 Actions outage
+  # left the run for #42 wedged: queued with no runner, refusing both cancel
+  # ("already completed") and rerun ("already running"), and holding the
+  # concurrency group so nothing could follow it. A merge cannot be repeated;
+  # this can.
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  # Superseded PR pushes are still cancelled, but a run on main is not: it may
-  # be part-way through the release job below, and a release cancelled between
-  # pushing the version commit and publishing the release would leave main
-  # claiming a version that has no archive anywhere.
+  # PR runs share one group per ref, so pushing again cancels the superseded
+  # run. Runs on main get a group of their own (run_id is unique) and therefore
+  # queue behind nothing.
+  #
+  # That asymmetry is deliberate. Sharing a group on main means one run that
+  # never starts blocks every run after it — which is exactly what the
+  # 2026-08-06 Actions outage did: the run for #42 sat queued with no runner,
+  # could not be cancelled or rerun, and would have held this lock against
+  # anything trying to follow it. Serialising releases is still necessary, but
+  # it is the release job's business, and it has its own group for it. The
+  # gates have no reason to serialise at all.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -198,8 +212,12 @@ jobs:
     # Every gate above must pass first: needs: ci makes the whole release
     # conditional on a green run, so a failing test can never publish a zip.
     needs: ci
-    # Merges only. PRs run the gates and stop; a push to develop does too.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # main only. PRs run the gates and stop; a push to develop does too.
+    # workflow_dispatch releases as well — a manual trigger that ran the gates
+    # and then declined to publish would be useless for the case it exists for.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     # The version commit and the release are both written with GITHUB_TOKEN,
