@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LifeLines\Tests\Lookup;
 
 use LifeLines\Lookup\LookupController;
+use LifeLines\Lookup\RateLimiter;
 use LifeLines\Lookup\TownRepository;
 use BleedingDeacons\WpMocks\Exceptions\JsonResponseException;
 use BleedingDeacons\WpMocks\TestCase;
@@ -24,6 +25,9 @@ class LookupControllerTest extends TestCase
     {
         parent::setUp();
         WpState::$options = [];
+        // The endpoint now counts requests per client into a transient, so
+        // buckets have to be cleared between tests or they accumulate.
+        WpState::$transients = [];
         unset($GLOBALS['lifelines_test_rows'], $_GET['q']);
         $this->controller = new LookupController(new TownRepository());
     }
@@ -31,8 +35,50 @@ class LookupControllerTest extends TestCase
     protected function tearDown(): void
     {
         WpState::$options = [];
+        WpState::$transients = [];
         unset($_GET['q']);
         parent::tearDown();
+    }
+
+    /**
+     * A caller over the cap is refused before the term is even read, so the
+     * wildcard scan is never reached.
+     *
+     * @test
+     */
+    public function a_caller_over_the_rate_limit_is_refused_with_429(): void
+    {
+        $limiter = new RateLimiter();
+        $controller = new LookupController(new TownRepository(), $limiter);
+
+        // Exhaust the window for this client.
+        for ($i = 0; $i < RateLimiter::MAX_REQUESTS; $i++) {
+            $limiter->overLimit('lookup:' . $limiter->clientIp());
+        }
+
+        $_GET['q'] = 'Bath';
+
+        try {
+            $controller->handleAjax();
+            $this->fail('Expected the request to be refused.');
+        } catch (JsonResponseException $response) {
+            $this->assertSame(429, $response->status);
+            $this->assertFalse($response->success);
+        }
+    }
+
+    /** @test */
+    public function an_ordinary_search_is_not_refused(): void
+    {
+        $GLOBALS['lifelines_test_rows'] = [['Place' => 'Bath']];
+        $_GET['q'] = 'Bath';
+
+        try {
+            $this->controller->handleAjax();
+            $this->fail('Expected wp_send_json_success to be signalled.');
+        } catch (JsonResponseException $response) {
+            $this->assertTrue($response->success);
+        }
     }
 
     public function testRegisterAndRegisterAssetsRunWithoutError(): void

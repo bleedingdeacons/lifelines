@@ -23,9 +23,14 @@ final class LookupController
 
     private TownRepository $repository;
 
-    public function __construct(TownRepository $repository)
+    private RateLimiter $rateLimiter;
+
+    public function __construct(TownRepository $repository, ?RateLimiter $rateLimiter = null)
     {
         $this->repository = $repository;
+        // Optional so existing callers keep working; there is one sensible
+        // implementation and nothing to configure.
+        $this->rateLimiter = $rateLimiter ?? new RateLimiter();
     }
 
     public function register(): void
@@ -129,6 +134,16 @@ final class LookupController
 
     public function handleAjax(): void
     {
+        // Checked before the term is read, so a refused caller costs a
+        // transient read and nothing else. See RateLimiter for why the
+        // ceiling is set as high as it is.
+        if ($this->rateLimiter->overLimit('lookup:' . $this->rateLimiter->clientIp())) {
+            wp_send_json_error(
+                ['message' => __('Too many searches just now. Please wait a moment and try again.', 'lifelines')],
+                429
+            );
+        }
+
         $term = isset($_GET['q']) ? sanitize_text_field(wp_unslash((string) $_GET['q'])) : '';
 
         $settings = new LookupSettings();
