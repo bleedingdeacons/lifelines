@@ -3,8 +3,8 @@ Contributors: thebleedingdeacons
 Tags: lookup, search, directory, helpline, ajax
 Requires at least: 6.1
 Tested up to: 6.9
-Stable tag: 1.5.14
-Build date: 2026/08/25 17:03:09
+Stable tag: 1.5.15
+Build date: 2026/08/25 22:35:36
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
