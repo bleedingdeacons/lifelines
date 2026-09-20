@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use LifeLines\Lookup\LookupSettings;
 use BleedingDeacons\WpMocks\TestCase;
 use BleedingDeacons\WpMocks\WpState;
@@ -12,9 +13,8 @@ use BleedingDeacons\WpMocks\WpState;
  * Covers LookupSettings: reading the stored wp_options row (with whitelist
  * fallbacks), the clamped result-limit / min-chars accessors, and the
  * sanitising save() including its empty-configuration guard.
- *
- * @covers \LifeLines\Lookup\LookupSettings
  */
+#[CoversClass(\LifeLines\Lookup\LookupSettings::class)]
 class LookupSettingsTest extends TestCase
 {
     protected function setUp(): void

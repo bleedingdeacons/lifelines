@@ -4,23 +4,22 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\DataProvider;
 use LifeLines\Lookup\Columns;
 use BleedingDeacons\WpMocks\TestCase;
-use BleedingDeacons\WpMocks\WpState;
 
 /**
  * Columns is the security linchpin of the lookup feature: column identifiers
  * are back-ticked straight into SQL, and the only thing making that safe is
  * that they must appear in this whitelist first. These tests pin that
  * guarantee.
- *
- * @covers \LifeLines\Lookup\Columns
  */
+#[CoversClass(Columns::class)]
 class ColumnsTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function keys_match_the_declared_column_map(): void
     {
         $this->assertSame(array_keys(Columns::ALL), Columns::keys());
@@ -28,9 +27,7 @@ class ColumnsTest extends TestCase
         $this->assertContains('Place', Columns::keys());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function every_declared_column_validates(): void
     {
         foreach (Columns::keys() as $column) {
@@ -42,10 +39,9 @@ class ColumnsTest extends TestCase
      * Validation is by exact key. Anything else — including case variants and
      * the labels — must be rejected, because a near-miss that slipped through
      * would be interpolated into SQL.
-     *
-     * @test
-     * @dataProvider invalidColumnProvider
      */
+    #[DataProvider('invalidColumnProvider')]
+    #[Test]
     public function it_rejects_anything_not_in_the_whitelist(string $column): void
     {
         $this->assertFalse(Columns::isValid($column));
@@ -68,9 +64,7 @@ class ColumnsTest extends TestCase
         ];
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function label_falls_back_to_the_key_when_unknown(): void
     {
         $this->assertSame('Phone Number', Columns::label('Number'));
@@ -78,9 +72,7 @@ class ColumnsTest extends TestCase
         $this->assertSame('Nonsense', Columns::label('Nonsense'));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function whitelist_keeps_only_valid_columns_and_preserves_order(): void
     {
         $result = Columns::whitelist(['Place', 'Nonsense', 'ID', 'DROP TABLE']);
@@ -88,26 +80,20 @@ class ColumnsTest extends TestCase
         $this->assertSame(['Place', 'ID'], $result);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function whitelist_removes_duplicates(): void
     {
         $this->assertSame(['ID', 'Place'], Columns::whitelist(['ID', 'Place', 'ID', 'Place']));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function whitelist_ignores_non_string_entries(): void
     {
         $this->assertSame(['ID'], Columns::whitelist(['ID', 42, null, ['Place'], true]));
     }
 
-    /**
-     * @test
-     * @dataProvider nonArrayProvider
-     */
+    #[DataProvider('nonArrayProvider')]
+    #[Test]
     public function whitelist_returns_empty_for_a_non_array(mixed $input): void
     {
         $this->assertSame([], Columns::whitelist($input));
@@ -126,9 +112,7 @@ class ColumnsTest extends TestCase
         ];
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function whitelist_of_everything_returns_every_column(): void
     {
         $this->assertSame(Columns::keys(), Columns::whitelist(Columns::keys()));

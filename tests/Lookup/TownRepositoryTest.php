@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use LifeLines\Lookup\TownRepository;
 use BleedingDeacons\WpMocks\TestCase;
-use BleedingDeacons\WpMocks\WpState;
 
 /**
  * Covers TownRepository::search — the empty-term and empty-whitelist guards,
  * and the happy path that builds the prepared query and maps the rows back.
- *
- * @covers \LifeLines\Lookup\TownRepository
  */
+#[CoversClass(TownRepository::class)]
 class TownRepositoryTest extends TestCase
 {
     protected function setUp(): void

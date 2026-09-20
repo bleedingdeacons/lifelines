@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use LifeLines\Lookup\LookupBootstrap;
 use BleedingDeacons\WpMocks\TestCase;
 use BleedingDeacons\WpMocks\WpState;
@@ -11,9 +12,8 @@ use BleedingDeacons\WpMocks\WpState;
 /**
  * Covers LookupBootstrap: hook registration (front-end only vs. admin), and
  * activation creating the lookup page only when one does not already exist.
- *
- * @covers \LifeLines\Lookup\LookupBootstrap
  */
+#[CoversClass(\LifeLines\Lookup\LookupBootstrap::class)]
 class LookupBootstrapTest extends TestCase
 {
     protected function setUp(): void

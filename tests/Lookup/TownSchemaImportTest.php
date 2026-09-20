@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use LifeLines\Lookup\Columns;
 use LifeLines\Lookup\TownSchema;
 use BleedingDeacons\WpMocks\TestCase;
-use BleedingDeacons\WpMocks\WpState;
 
 /**
  * Covers TownSchema's database-facing surface against the FakeWpdb stub:
  * tableName/exists/count/install and the import() parser with its header,
  * auto-id, numeric-null, blank-line, batch-error and guard branches.
- *
- * @covers \LifeLines\Lookup\TownSchema
  */
+#[CoversClass(TownSchema::class)]
 class TownSchemaImportTest extends TestCase
 {
     /** @var list<string> */
@@ -182,7 +182,7 @@ class TownSchemaImportTest extends TestCase
         // exportCsv() ends in exit(); drive its chunked loop by returning one
         // full chunk then throwing, so it unwinds before the exit. The CSV it
         // has already streamed to php://output is captured here.
-        $fullChunk = array_fill(0, 2000, array_fill_keys(\LifeLines\Lookup\Columns::keys(), 'x'));
+        $fullChunk = array_fill(0, 2000, array_fill_keys(Columns::keys(), 'x'));
         $GLOBALS['lifelines_test_results_queue'] = [$fullChunk, '__throw__'];
 
         $baseLevel = ob_get_level();
