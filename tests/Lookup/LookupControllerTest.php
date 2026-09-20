@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
 use LifeLines\Lookup\LookupController;
 use LifeLines\Lookup\RateLimiter;
 use LifeLines\Lookup\TownRepository;
@@ -14,9 +16,8 @@ use BleedingDeacons\WpMocks\WpState;
 /**
  * Covers LookupController: hook/asset registration, the shortcode HTML render,
  * and the public AJAX endpoint's short-term and search branches.
- *
- * @covers \LifeLines\Lookup\LookupController
  */
+#[CoversClass(LookupController::class)]
 class LookupControllerTest extends TestCase
 {
     private LookupController $controller;
@@ -43,9 +44,8 @@ class LookupControllerTest extends TestCase
     /**
      * A caller over the cap is refused before the term is even read, so the
      * wildcard scan is never reached.
-     *
-     * @test
      */
+    #[Test]
     public function a_caller_over_the_rate_limit_is_refused_with_429(): void
     {
         $limiter = new RateLimiter();
@@ -67,7 +67,7 @@ class LookupControllerTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function an_ordinary_search_is_not_refused(): void
     {
         $GLOBALS['lifelines_test_rows'] = [['Place' => 'Bath']];

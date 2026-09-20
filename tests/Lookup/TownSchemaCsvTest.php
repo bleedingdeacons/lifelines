@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\DataProvider;
 use LifeLines\Lookup\TownSchema;
 use BleedingDeacons\WpMocks\TestCase;
-use BleedingDeacons\WpMocks\WpState;
 use ReflectionMethod;
 
 /**
@@ -23,9 +25,8 @@ use ReflectionMethod;
  * a quoted field ending in a backslash escaped its own closing quote, the
  * parser ran past the end of the record, and two rows silently became one —
  * losing a town on import with no error.
- *
- * @covers \LifeLines\Lookup\TownSchema
  */
+#[CoversClass(TownSchema::class)]
 class TownSchemaCsvTest extends TestCase
 {
     /** @var string[] */
@@ -45,9 +46,8 @@ class TownSchemaCsvTest extends TestCase
     /**
      * The regression. Written as raw bytes, exactly as a spreadsheet
      * application would emit them, so the parser is what is under test.
-     *
-     * @test
      */
+    #[Test]
     public function a_field_ending_in_a_backslash_does_not_swallow_the_next_row(): void
     {
         $path = $this->writeRaw(
@@ -65,9 +65,7 @@ class TownSchemaCsvTest extends TestCase
         $this->assertSame('Buxton', $rows[2][1], 'The second town must not be swallowed by the first.');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function a_backslash_inside_a_field_is_data_not_an_escape(): void
     {
         $path = $this->writeRaw("ID,Place\n1,\"North\\South\"\n");
@@ -80,9 +78,8 @@ class TownSchemaCsvTest extends TestCase
     /**
      * The standard RFC 4180 escape — a doubled quote inside a quoted field —
      * must still be honoured.
-     *
-     * @test
      */
+    #[Test]
     public function a_doubled_quote_inside_a_quoted_field_is_unescaped(): void
     {
         $path = $this->writeRaw("ID,Place\n1,\"Stoke-on-\"\"Trent\"\"\"\n");
@@ -96,10 +93,9 @@ class TownSchemaCsvTest extends TestCase
      * The export is meant to round-trip back through the importer, so the
      * writer and reader must agree on escaping. Anything the exporter emits
      * must come back byte-identical.
-     *
-     * @test
-     * @dataProvider awkwardValueProvider
      */
+    #[DataProvider('awkwardValueProvider')]
+    #[Test]
     public function values_survive_an_export_import_round_trip(string $value): void
     {
         $original = ['1', 'Ambleside', $value];
@@ -135,9 +131,8 @@ class TownSchemaCsvTest extends TestCase
     /**
      * A multi-row export must re-import with every row intact — the failure
      * mode of the old escape was losing a row, not mangling a value.
-     *
-     * @test
      */
+    #[Test]
     public function every_row_of_a_multi_row_export_re_imports(): void
     {
         $original = [
