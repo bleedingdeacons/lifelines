@@ -2,119 +2,78 @@
 
 declare(strict_types=1);
 
-namespace LifeLines\Tests\Lookup;
-
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\Attributes\DataProvider;
 use LifeLines\Lookup\Columns;
-use BleedingDeacons\WpMocks\TestCase;
 
-/**
+/*
  * Columns is the security linchpin of the lookup feature: column identifiers
  * are back-ticked straight into SQL, and the only thing making that safe is
  * that they must appear in this whitelist first. These tests pin that
  * guarantee.
  */
-#[CoversClass(Columns::class)]
-class ColumnsTest extends TestCase
-{
-    #[Test]
-    public function keys_match_the_declared_column_map(): void
-    {
-        $this->assertSame(array_keys(Columns::ALL), Columns::keys());
-        $this->assertContains('ID', Columns::keys());
-        $this->assertContains('Place', Columns::keys());
-    }
 
-    #[Test]
-    public function every_declared_column_validates(): void
-    {
-        foreach (Columns::keys() as $column) {
-            $this->assertTrue(Columns::isValid($column), "{$column} should be a valid column");
-        }
-    }
+covers(Columns::class);
 
-    /**
-     * Validation is by exact key. Anything else — including case variants and
-     * the labels — must be rejected, because a near-miss that slipped through
-     * would be interpolated into SQL.
-     */
-    #[DataProvider('invalidColumnProvider')]
-    #[Test]
-    public function it_rejects_anything_not_in_the_whitelist(string $column): void
-    {
-        $this->assertFalse(Columns::isValid($column));
-    }
+describe('keys', function () {
+    it('match the declared column map', function () {
+        expect(Columns::keys())
+            ->toBe(array_keys(Columns::ALL))
+            ->toContain('ID', 'Place');
+    });
+});
 
-    /**
-     * @return array<string, array{0: string}>
-     */
-    public static function invalidColumnProvider(): array
-    {
-        return [
-            'unknown column'      => ['Nonsense'],
-            'empty string'        => [''],
-            'lowercase variant'   => ['id'],
-            'label not key'       => ['Phone Number'],
-            'sql injection'       => ['ID`; DROP TABLE wp_life_lines; --'],
-            'backtick'            => ['`ID`'],
-            'wildcard'            => ['*'],
-            'whitespace padded'   => [' ID'],
-        ];
-    }
+describe('isValid', function () {
+    it('accepts every declared column', function () {
+        expect(array_map(Columns::isValid(...), Columns::keys()))->each->toBeTrue();
+    });
 
-    #[Test]
-    public function label_falls_back_to_the_key_when_unknown(): void
-    {
-        $this->assertSame('Phone Number', Columns::label('Number'));
-        $this->assertSame('AA Region', Columns::label('AA_Region'));
-        $this->assertSame('Nonsense', Columns::label('Nonsense'));
-    }
+    // Validation is by exact key. Anything else — including case variants and
+    // the labels — must be rejected, because a near-miss that slipped through
+    // would be interpolated into SQL.
+    it('rejects anything not in the whitelist', function (string $column) {
+        expect(Columns::isValid($column))->toBeFalse();
+    })->with([
+        'unknown column'    => ['Nonsense'],
+        'empty string'      => [''],
+        'lowercase variant' => ['id'],
+        'label not key'     => ['Phone Number'],
+        'sql injection'     => ['ID`; DROP TABLE wp_life_lines; --'],
+        'backtick'          => ['`ID`'],
+        'wildcard'          => ['*'],
+        'whitespace padded' => [' ID'],
+    ]);
+});
 
-    #[Test]
-    public function whitelist_keeps_only_valid_columns_and_preserves_order(): void
-    {
-        $result = Columns::whitelist(['Place', 'Nonsense', 'ID', 'DROP TABLE']);
+describe('label', function () {
+    it('falls back to the key when unknown', function () {
+        expect(Columns::label('Number'))->toBe('Phone Number')
+            ->and(Columns::label('AA_Region'))->toBe('AA Region')
+            ->and(Columns::label('Nonsense'))->toBe('Nonsense');
+    });
+});
 
-        $this->assertSame(['Place', 'ID'], $result);
-    }
+describe('whitelist', function () {
+    it('keeps only valid columns and preserves order', function () {
+        expect(Columns::whitelist(['Place', 'Nonsense', 'ID', 'DROP TABLE']))->toBe(['Place', 'ID']);
+    });
 
-    #[Test]
-    public function whitelist_removes_duplicates(): void
-    {
-        $this->assertSame(['ID', 'Place'], Columns::whitelist(['ID', 'Place', 'ID', 'Place']));
-    }
+    it('removes duplicates', function () {
+        expect(Columns::whitelist(['ID', 'Place', 'ID', 'Place']))->toBe(['ID', 'Place']);
+    });
 
-    #[Test]
-    public function whitelist_ignores_non_string_entries(): void
-    {
-        $this->assertSame(['ID'], Columns::whitelist(['ID', 42, null, ['Place'], true]));
-    }
+    it('ignores non-string entries', function () {
+        expect(Columns::whitelist(['ID', 42, null, ['Place'], true]))->toBe(['ID']);
+    });
 
-    #[DataProvider('nonArrayProvider')]
-    #[Test]
-    public function whitelist_returns_empty_for_a_non_array(mixed $input): void
-    {
-        $this->assertSame([], Columns::whitelist($input));
-    }
+    it('returns empty for a non-array', function (mixed $input) {
+        expect(Columns::whitelist($input))->toBe([]);
+    })->with([
+        'null'   => [null],
+        'string' => ['ID'],
+        'int'    => [1],
+        'false'  => [false],
+    ]);
 
-    /**
-     * @return array<string, array{0: mixed}>
-     */
-    public static function nonArrayProvider(): array
-    {
-        return [
-            'null'   => [null],
-            'string' => ['ID'],
-            'int'    => [1],
-            'false'  => [false],
-        ];
-    }
-
-    #[Test]
-    public function whitelist_of_everything_returns_every_column(): void
-    {
-        $this->assertSame(Columns::keys(), Columns::whitelist(Columns::keys()));
-    }
-}
+    it('of everything returns every column', function () {
+        expect(Columns::whitelist(Columns::keys()))->toBe(Columns::keys());
+    });
+});
