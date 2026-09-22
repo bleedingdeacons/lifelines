@@ -4,38 +4,32 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use LifeLines\Lookup\TownRepository;
-use BleedingDeacons\WpMocks\TestCase;
 
-/**
+/*
  * Covers TownRepository::search — the empty-term and empty-whitelist guards,
  * and the happy path that builds the prepared query and maps the rows back.
  */
-#[CoversClass(TownRepository::class)]
-class TownRepositoryTest extends TestCase
-{
-    protected function setUp(): void
-    {
-        parent::setUp();
-        unset($GLOBALS['lifelines_test_rows']);
-        $GLOBALS['wpdb']->queries = [];
-    }
 
-    public function testBlankTermReturnsNoRows(): void
-    {
-        $this->assertSame([], (new TownRepository())->search('   ', ['Place'], ['Place'], 50));
-    }
+covers(TownRepository::class);
 
-    public function testUnknownColumnsReturnNoRows(): void
-    {
+beforeEach(function () {
+    unset($GLOBALS['lifelines_test_rows']);
+    $GLOBALS['wpdb']->queries = [];
+});
+
+describe('search', function () {
+    it('returns no rows for a blank term', function () {
+        expect((new TownRepository())->search('   ', ['Place'], ['Place'], 50))->toBe([]);
+    });
+
+    it('returns no rows for unknown columns', function () {
         $repo = new TownRepository();
-        $this->assertSame([], $repo->search('bath', ['Nonsense'], ['Place'], 50));
-        $this->assertSame([], $repo->search('bath', ['Place'], ['Nonsense'], 50));
-    }
+        expect($repo->search('bath', ['Nonsense'], ['Place'], 50))->toBe([])
+            ->and($repo->search('bath', ['Place'], ['Nonsense'], 50))->toBe([]);
+    });
 
-    public function testSearchBuildsAQueryAndReturnsRows(): void
-    {
+    it('builds a query and returns rows', function () {
         $GLOBALS['lifelines_test_rows'] = [
             ['Place' => 'Bath', 'County' => 'Somerset'],
             ['Place' => 'Bathgate', 'County' => 'West Lothian'],
@@ -43,27 +37,22 @@ class TownRepositoryTest extends TestCase
 
         $rows = (new TownRepository())->search('bath', ['Place', 'County'], ['Place', 'County'], 25);
 
-        $this->assertCount(2, $rows);
-        $this->assertSame('Bath', $rows[0]['Place']);
+        expect($rows)->toHaveCount(2)
+            ->and($rows[0]['Place'])->toBe('Bath');
 
         // The generated SQL selects and searches the whitelisted columns.
-        $sql = $GLOBALS['wpdb']->queries[0];
-        $this->assertStringContainsString('`Place`', $sql);
-        $this->assertStringContainsString('LIKE %s', $sql);
-        $this->assertStringContainsString('LIMIT 25', $sql);
-    }
+        expect($GLOBALS['wpdb']->queries[0])->toContain('`Place`', 'LIKE %s', 'LIMIT 25');
+    });
 
-    public function testLimitIsClampedToTheAllowedMaximum(): void
-    {
+    it('clamps the limit to the allowed maximum', function () {
         $GLOBALS['lifelines_test_rows'] = [];
         (new TownRepository())->search('bath', ['Place'], ['Place'], 100000);
 
-        $this->assertStringContainsString('LIMIT 200', $GLOBALS['wpdb']->queries[0]);
-    }
+        expect($GLOBALS['wpdb']->queries[0])->toContain('LIMIT 200');
+    });
 
-    public function testANonArrayResultBecomesAnEmptyList(): void
-    {
+    it('turns a non-array result into an empty list', function () {
         $GLOBALS['lifelines_test_rows'] = null;
-        $this->assertSame([], (new TownRepository())->search('bath', ['Place'], ['Place'], 50));
-    }
-}
+        expect((new TownRepository())->search('bath', ['Place'], ['Place'], 50))->toBe([]);
+    });
+});

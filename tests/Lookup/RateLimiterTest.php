@@ -4,111 +4,82 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\Test;
-use BleedingDeacons\WpMocks\TestCase;
 use BleedingDeacons\WpMocks\WpState;
 use LifeLines\Lookup\RateLimiter;
 
-/**
+/*
  * The throttle in front of the public, unauthenticated lookup endpoint.
  */
-#[CoversClass(RateLimiter::class)]
-class RateLimiterTest extends TestCase
-{
-    private RateLimiter $limiter;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        WpState::$transients = [];
-        unset($_SERVER['REMOTE_ADDR']);
-        $this->limiter = new RateLimiter();
-    }
+covers(RateLimiter::class);
 
-    protected function tearDown(): void
-    {
-        unset($_SERVER['REMOTE_ADDR']);
-        parent::tearDown();
-    }
+beforeEach(function () {
+    WpState::$transients = [];
+    unset($_SERVER['REMOTE_ADDR']);
+    $this->limiter = new RateLimiter();
+});
 
-    #[Test]
-    public function a_request_under_the_cap_is_allowed(): void
-    {
-        $this->assertFalse($this->limiter->overLimit('k', 3, 60));
-    }
+afterEach(function () {
+    unset($_SERVER['REMOTE_ADDR']);
+});
 
-    #[Test]
-    public function the_cap_is_reached_only_after_that_many_requests(): void
-    {
-        $this->assertFalse($this->limiter->overLimit('k', 3, 60));
-        $this->assertFalse($this->limiter->overLimit('k', 3, 60));
-        $this->assertFalse($this->limiter->overLimit('k', 3, 60));
+describe('overLimit', function () {
+    it('allows a request under the cap', function () {
+        expect($this->limiter->overLimit('k', 3, 60))->toBeFalse();
+    });
 
-        $this->assertTrue($this->limiter->overLimit('k', 3, 60));
-    }
+    it('reaches the cap only after that many requests', function () {
+        expect($this->limiter->overLimit('k', 3, 60))->toBeFalse()
+            ->and($this->limiter->overLimit('k', 3, 60))->toBeFalse()
+            ->and($this->limiter->overLimit('k', 3, 60))->toBeFalse()
+            ->and($this->limiter->overLimit('k', 3, 60))->toBeTrue();
+    });
 
-    #[Test]
-    public function separate_keys_do_not_share_a_bucket(): void
-    {
+    it('does not share a bucket between separate keys', function () {
         $this->limiter->overLimit('a', 1, 60);
 
-        $this->assertTrue($this->limiter->overLimit('a', 1, 60));
-        $this->assertFalse($this->limiter->overLimit('b', 1, 60));
-    }
+        expect($this->limiter->overLimit('a', 1, 60))->toBeTrue()
+            ->and($this->limiter->overLimit('b', 1, 60))->toBeFalse();
+    });
 
-    /**
-     * A window of zero would otherwise divide by zero when picking a bucket.
-     */
-    #[Test]
-    public function a_nonsensical_window_or_cap_is_clamped_rather_than_fatal(): void
-    {
-        $this->assertFalse($this->limiter->overLimit('k', 0, 0));
-        $this->assertTrue($this->limiter->overLimit('k', 0, 0));
-    }
+    // A window of zero would otherwise divide by zero when picking a bucket.
+    it('clamps a nonsensical window or cap rather than failing', function () {
+        expect($this->limiter->overLimit('k', 0, 0))->toBeFalse()
+            ->and($this->limiter->overLimit('k', 0, 0))->toBeTrue();
+    });
+});
 
-    #[Test]
-    public function the_client_ip_comes_from_remote_addr(): void
-    {
+describe('clientIp', function () {
+    it('comes from REMOTE_ADDR', function () {
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
 
-        $this->assertSame('203.0.113.9', $this->limiter->clientIp());
-    }
+        expect($this->limiter->clientIp())->toBe('203.0.113.9');
+    });
 
-    #[Test]
-    public function an_absent_or_malformed_remote_addr_becomes_unknown(): void
-    {
-        $this->assertSame('unknown', $this->limiter->clientIp());
+    it('becomes unknown when REMOTE_ADDR is absent or malformed', function () {
+        expect($this->limiter->clientIp())->toBe('unknown');
 
         $_SERVER['REMOTE_ADDR'] = 'not-an-ip';
-        $this->assertSame('unknown', $this->limiter->clientIp());
-    }
+        expect($this->limiter->clientIp())->toBe('unknown');
+    });
 
-    /**
-     * X-Forwarded-For is caller-supplied. Honouring it would let anyone mint a
-     * fresh bucket per request and opt out of the limit entirely.
-     */
-    #[Test]
-    public function a_forwarded_for_header_is_ignored(): void
-    {
+    // X-Forwarded-For is caller-supplied. Honouring it would let anyone mint a
+    // fresh bucket per request and opt out of the limit entirely.
+    it('ignores a forwarded-for header', function () {
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.1';
 
-        $this->assertSame('203.0.113.9', $this->limiter->clientIp());
+        expect($this->limiter->clientIp())->toBe('203.0.113.9');
 
         unset($_SERVER['HTTP_X_FORWARDED_FOR']);
-    }
+    });
+});
 
-    /**
-     * The shipped ceiling has to clear ordinary use by a wide margin: the
-     * front end debounces at 200ms, so even continuous typing for the whole
-     * window stays well under it, and behind a CDN the whole site may share
-     * one REMOTE_ADDR.
-     */
-    #[Test]
-    public function the_shipped_cap_leaves_room_for_real_use(): void
-    {
-        $this->assertGreaterThanOrEqual(300, RateLimiter::MAX_REQUESTS);
-        $this->assertSame(60, RateLimiter::WINDOW_SECONDS);
-    }
-}
+// The shipped ceiling has to clear ordinary use by a wide margin: the
+// front end debounces at 200ms, so even continuous typing for the whole
+// window stays well under it, and behind a CDN the whole site may share
+// one REMOTE_ADDR.
+it('ships a cap that leaves room for real use', function () {
+    expect(RateLimiter::MAX_REQUESTS)->toBeGreaterThanOrEqual(300)
+        ->and(RateLimiter::WINDOW_SECONDS)->toBe(60);
+});

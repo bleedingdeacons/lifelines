@@ -4,90 +4,79 @@ declare(strict_types=1);
 
 namespace LifeLines\Tests\Lookup;
 
-use PHPUnit\Framework\Attributes\CoversClass;
 use LifeLines\Lookup\LookupSettings;
-use BleedingDeacons\WpMocks\TestCase;
 use BleedingDeacons\WpMocks\WpState;
 
-/**
+/*
  * Covers LookupSettings: reading the stored wp_options row (with whitelist
  * fallbacks), the clamped result-limit / min-chars accessors, and the
  * sanitising save() including its empty-configuration guard.
  */
-#[CoversClass(\LifeLines\Lookup\LookupSettings::class)]
-class LookupSettingsTest extends TestCase
-{
-    protected function setUp(): void
-    {
-        parent::setUp();
-        WpState::$options = [];
-    }
 
-    protected function tearDown(): void
-    {
-        WpState::$options = [];
-        parent::tearDown();
-    }
+covers(LookupSettings::class);
 
-    public function testDefaultsWhenNothingIsStored(): void
-    {
+beforeEach(function () {
+    WpState::$options = [];
+});
+
+afterEach(function () {
+    WpState::$options = [];
+});
+
+describe('reading', function () {
+    it('uses the defaults when nothing is stored', function () {
         $settings = new LookupSettings();
 
-        $this->assertContains('Place', $settings->searchColumns());
-        $this->assertContains('Service_Name', $settings->displayColumns());
-        $this->assertSame(50, $settings->resultLimit());
-        $this->assertSame(2, $settings->minChars());
-    }
+        expect($settings->searchColumns())->toContain('Place')
+            ->and($settings->displayColumns())->toContain('Service_Name')
+            ->and($settings->resultLimit())->toBe(50)
+            ->and($settings->minChars())->toBe(2);
+    });
 
-    public function testStoredColumnsAreWhitelisted(): void
-    {
+    it('whitelists the stored columns', function () {
         WpState::$options[LookupSettings::OPTION] = [
             'search_columns'  => ['Place', 'Nonsense', 'Postcode'],
             'display_columns' => ['County', 'DROP TABLE'],
         ];
 
         $settings = new LookupSettings();
-        $this->assertSame(['Place', 'Postcode'], $settings->searchColumns());
-        $this->assertSame(['County'], $settings->displayColumns());
-    }
+        expect($settings->searchColumns())->toBe(['Place', 'Postcode'])
+            ->and($settings->displayColumns())->toBe(['County']);
+    });
 
-    public function testEmptyStoredColumnsFallBackToDefaults(): void
-    {
+    it('falls back to the defaults when the stored columns are empty', function () {
         WpState::$options[LookupSettings::OPTION] = [
             'search_columns'  => ['Nonsense'],
             'display_columns' => [],
         ];
 
         $settings = new LookupSettings();
-        $this->assertSame(LookupSettings::defaults()['search_columns'], $settings->searchColumns());
-        $this->assertSame(LookupSettings::defaults()['display_columns'], $settings->displayColumns());
-    }
+        expect($settings->searchColumns())->toBe(LookupSettings::defaults()['search_columns'])
+            ->and($settings->displayColumns())->toBe(LookupSettings::defaults()['display_columns']);
+    });
 
-    public function testNonArrayStoredOptionIsIgnored(): void
-    {
+    it('ignores a non-array stored option', function () {
         WpState::$options[LookupSettings::OPTION] = 'corrupt';
 
-        $settings = new LookupSettings();
-        $this->assertSame(50, $settings->resultLimit());
-    }
+        expect((new LookupSettings())->resultLimit())->toBe(50);
+    });
 
-    public function testResultLimitIsClamped(): void
-    {
+    it('clamps the result limit', function () {
         WpState::$options[LookupSettings::OPTION] = ['result_limit' => 9999];
-        $this->assertSame(LookupSettings::MAX_RESULT_LIMIT, (new LookupSettings())->resultLimit());
+        expect((new LookupSettings())->resultLimit())->toBe(LookupSettings::MAX_RESULT_LIMIT);
 
         WpState::$options[LookupSettings::OPTION] = ['result_limit' => 0];
-        $this->assertSame(1, (new LookupSettings())->resultLimit());
-    }
+        expect((new LookupSettings())->resultLimit())->toBe(1);
+    });
 
-    public function testMinCharsIsAtLeastOne(): void
-    {
+    it('keeps min chars at least one', function () {
         WpState::$options[LookupSettings::OPTION] = ['min_chars' => 0];
-        $this->assertSame(1, (new LookupSettings())->minChars());
-    }
+        expect((new LookupSettings())->minChars())->toBe(1);
+    });
+});
 
-    public function testSavePersistsSanitisedValues(): void
-    {
+describe('save', function () {
+    it('persists sanitised values', function () {
         LookupSettings::save([
             'search_columns'  => ['Place', 'Nonsense'],
             'display_columns' => ['County', 'Number'],
@@ -96,14 +85,13 @@ class LookupSettingsTest extends TestCase
         ]);
 
         $stored = WpState::$options[LookupSettings::OPTION];
-        $this->assertSame(['Place'], $stored['search_columns']);
-        $this->assertSame(['County', 'Number'], $stored['display_columns']);
-        $this->assertSame(LookupSettings::MAX_RESULT_LIMIT, $stored['result_limit']);
-        $this->assertSame(3, $stored['min_chars']);
-    }
+        expect($stored['search_columns'])->toBe(['Place'])
+            ->and($stored['display_columns'])->toBe(['County', 'Number'])
+            ->and($stored['result_limit'])->toBe(LookupSettings::MAX_RESULT_LIMIT)
+            ->and($stored['min_chars'])->toBe(3);
+    });
 
-    public function testSaveGuardsAgainstAnEmptyConfiguration(): void
-    {
+    it('guards against an empty configuration', function () {
         LookupSettings::save([
             'search_columns'  => ['Nonsense'],
             'display_columns' => [],
@@ -112,7 +100,7 @@ class LookupSettingsTest extends TestCase
         ]);
 
         $stored = WpState::$options[LookupSettings::OPTION];
-        $this->assertSame(LookupSettings::defaults()['search_columns'], $stored['search_columns']);
-        $this->assertSame(LookupSettings::defaults()['display_columns'], $stored['display_columns']);
-    }
-}
+        expect($stored['search_columns'])->toBe(LookupSettings::defaults()['search_columns'])
+            ->and($stored['display_columns'])->toBe(LookupSettings::defaults()['display_columns']);
+    });
+});

@@ -148,7 +148,7 @@ composer install
 
 | Command | Description |
 |---|---|
-| `composer test` | Run the PHPUnit test suite |
+| `composer test` | Run the Pest test suite |
 | `composer phpstan` | Run PHPStan static analysis |
 
 Line coverage is reported to [Coveralls](https://coveralls.io/github/bleedingdeacons/lifelines?branch=main)
